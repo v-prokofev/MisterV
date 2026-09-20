@@ -145,7 +145,7 @@ func _create_particle_burst() -> void:
 	p_mat.emission = object_color
 	p_mat.emission_energy_multiplier = 3.5
 	p_mesh.material = p_mat
-	particles.draw_pass_1 = p_mesh
+	particles.mesh = p_mesh
 	
 	scene_root.add_child(particles)
 	particles.global_position = global_position + Vector3(0, 0.8, 0)
