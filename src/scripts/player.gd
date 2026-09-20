@@ -2,7 +2,8 @@ extends CharacterBody3D
 
 @export var move_speed: float = 6.5
 @export var attack_range: float = 25.0
-@export var attack_cooldown: float = 0.75
+@export var attack_cooldown: float = 2.4 # Attack every 2.4s
+@export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40 # 0.50 = 50% into attack animation
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
 
 # Camera Zoom Parameters
@@ -18,17 +19,18 @@ var target_fov: float = 70.0
 
 var anim_player: AnimationPlayer = null
 var anim_tree: AnimationTree = null
+var is_attacking: bool = false
 
 var current_target: Node3D = null
 var attack_timer: float = 0.0
-var current_locomotion_state: String = "idle"
+var current_locomotion_state: String = ""
 
 # Relative movement direction vector (X = right/left strafe, Y = forward/back relative to facing)
 var relative_move_dir: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
-	Engine.time_scale = 1.0 # Normal gameplay speed
+	Engine.time_scale = 1.0
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
@@ -113,78 +115,33 @@ func _setup_animation_tree() -> void:
 	vampire_model.add_child(anim_tree)
 	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
 	
-	var blend_tree = AnimationNodeBlendTree.new()
+	# Simple StateMachine: idle, run_forward, run_back, run_left, run_right, attack
+	var state_machine = AnimationNodeStateMachine.new()
 	
-	# 1. Locomotion Transition Node
-	var trans = AnimationNodeTransition.new()
-	trans.input_count = 5
-	trans.set_input_name(0, "idle")
-	trans.set_input_name(1, "run_forward")
-	trans.set_input_name(2, "run_back")
-	trans.set_input_name(3, "run_left")
-	trans.set_input_name(4, "run_right")
+	var all_anims = ["idle", "run_forward", "run_back", "run_left", "run_right", "attack"]
+	for anim_name in all_anims:
+		var node = AnimationNodeAnimation.new()
+		node.animation = anim_name
+		state_machine.add_node(anim_name, node)
 	
-	blend_tree.add_node("locomotion", trans)
+	# Connect all states to each other (any -> any transitions)
+	for from_state in all_anims:
+		for to_state in all_anims:
+			if from_state != to_state:
+				var trans = AnimationNodeStateMachineTransition.new()
+				trans.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+				trans.xfade_time = 0.15
+				state_machine.add_transition(from_state, to_state, trans)
 	
-	var anim_names = ["idle", "run_forward", "run_back", "run_left", "run_right"]
-	for i in range(anim_names.size()):
-		var node_name = "anim_" + anim_names[i]
-		var anim_node = AnimationNodeAnimation.new()
-		anim_node.animation = anim_names[i]
-		blend_tree.add_node(node_name, anim_node)
-		blend_tree.connect_node("locomotion", i, node_name)
-		
-	# 2. Attack Animation Node
-	var attack_node = AnimationNodeAnimation.new()
-	attack_node.animation = "attack"
-	blend_tree.add_node("attack_anim", attack_node)
+	# In Godot 4, set start by transitioning from built-in "Start" node
+	var start_trans = AnimationNodeStateMachineTransition.new()
+	start_trans.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	start_trans.xfade_time = 0.0
+	state_machine.add_transition("Start", "idle", start_trans)
 	
-	var timescale = AnimationNodeTimeScale.new()
-	blend_tree.add_node("attack_speed", timescale)
-	blend_tree.connect_node("attack_speed", 0, "attack_anim")
-	
-	# 3. Refined Upper Body Mask (Arms + Upper Chest only, excluding Head and Root Spine to prevent torso twisting)
-	var oneshot = AnimationNodeOneShot.new()
-	oneshot.fadein_time = 0.08
-	oneshot.fadeout_time = 0.12
-	oneshot.filter_enabled = true
-	
-	var upper_body_paths = [
-		"Skeleton3D:mixamorig_Spine1",
-		"Skeleton3D:mixamorig_Spine2",
-		"Skeleton3D:mixamorig_LeftShoulder",
-		"Skeleton3D:mixamorig_LeftArm",
-		"Skeleton3D:mixamorig_LeftForeArm",
-		"Skeleton3D:mixamorig_LeftHand",
-		"Skeleton3D:mixamorig_RightShoulder",
-		"Skeleton3D:mixamorig_RightArm",
-		"Skeleton3D:mixamorig_RightForeArm",
-		"Skeleton3D:mixamorig_RightHand",
-		"Skeleton3D:mixamorig_LeftHandThumb1", "Skeleton3D:mixamorig_LeftHandThumb2", "Skeleton3D:mixamorig_LeftHandThumb3", "Skeleton3D:mixamorig_LeftHandThumb4",
-		"Skeleton3D:mixamorig_LeftHandIndex1", "Skeleton3D:mixamorig_LeftHandIndex2", "Skeleton3D:mixamorig_LeftHandIndex3", "Skeleton3D:mixamorig_LeftHandIndex4",
-		"Skeleton3D:mixamorig_LeftHandMiddle1", "Skeleton3D:mixamorig_LeftHandMiddle2", "Skeleton3D:mixamorig_LeftHandMiddle3", "Skeleton3D:mixamorig_LeftHandMiddle4",
-		"Skeleton3D:mixamorig_LeftHandRing1", "Skeleton3D:mixamorig_LeftHandRing2", "Skeleton3D:mixamorig_LeftHandRing3", "Skeleton3D:mixamorig_LeftHandRing4",
-		"Skeleton3D:mixamorig_LeftHandPinky1", "Skeleton3D:mixamorig_LeftHandPinky2", "Skeleton3D:mixamorig_LeftHandPinky3", "Skeleton3D:mixamorig_LeftHandPinky4",
-		"Skeleton3D:mixamorig_RightHandThumb1", "Skeleton3D:mixamorig_RightHandThumb2", "Skeleton3D:mixamorig_RightHandThumb3", "Skeleton3D:mixamorig_RightHandThumb4",
-		"Skeleton3D:mixamorig_RightHandIndex1", "Skeleton3D:mixamorig_RightHandIndex2", "Skeleton3D:mixamorig_RightHandIndex3", "Skeleton3D:mixamorig_RightHandIndex4",
-		"Skeleton3D:mixamorig_RightHandMiddle1", "Skeleton3D:mixamorig_RightHandMiddle2", "Skeleton3D:mixamorig_RightHandMiddle3", "Skeleton3D:mixamorig_RightHandMiddle4",
-		"Skeleton3D:mixamorig_RightHandRing1", "Skeleton3D:mixamorig_RightHandRing2", "Skeleton3D:mixamorig_RightHandRing3", "Skeleton3D:mixamorig_RightHandRing4",
-		"Skeleton3D:mixamorig_RightHandPinky1", "Skeleton3D:mixamorig_RightHandPinky2", "Skeleton3D:mixamorig_RightHandPinky3", "Skeleton3D:mixamorig_RightHandPinky4"
-	]
-	
-	for p in upper_body_paths:
-		oneshot.set_filter_path(NodePath(p), true)
-		
-	blend_tree.add_node("attack_shot", oneshot)
-	
-	blend_tree.connect_node("attack_shot", 0, "locomotion")
-	blend_tree.connect_node("attack_shot", 1, "attack_speed")
-	blend_tree.connect_node("output", 0, "attack_shot")
-	
-	anim_tree.tree_root = blend_tree
+	anim_tree.tree_root = state_machine
 	anim_tree.active = true
-	anim_tree.set("parameters/attack_speed/scale", 2.6)
-	print("Refined Upper Body Mask Applied (Spine1/Spine2 + Arms)")
+	print("AnimationTree (StateMachine, full-body) set up successfully")
 
 func _physics_process(delta: float) -> void:
 	# 0. Smooth Camera Zoom FOV
@@ -254,7 +211,7 @@ func _physics_process(delta: float) -> void:
 		_trigger_spell_cast()
 
 func _update_locomotion() -> void:
-	if not anim_tree:
+	if not anim_tree or is_attacking:
 		return
 		
 	var target_state = "idle"
@@ -267,20 +224,45 @@ func _update_locomotion() -> void:
 
 	if current_locomotion_state != target_state:
 		current_locomotion_state = target_state
-		anim_tree.set("parameters/locomotion/transition_request", target_state)
+		var playback = anim_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
+		if playback:
+			playback.travel(target_state)
 
 func _trigger_spell_cast() -> void:
 	if not current_target or not is_instance_valid(current_target):
 		return
+	if is_attacking:
+		return
 		
-	if anim_tree:
-		anim_tree.set("parameters/attack_shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-		
-	# Wait for forward hand extension (0.24s at 2.6x speed)
-	await get_tree().create_timer(0.24).timeout
+	is_attacking = true
+	current_locomotion_state = ""
 	
+	if anim_tree:
+		var playback = anim_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
+		if playback:
+			playback.travel("attack")
+		
+	# Get actual animation duration to wait the right amount
+	var attack_duration: float = 2.3  # fallback
+	if anim_player and anim_player.has_animation("attack"):
+		attack_duration = anim_player.get_animation("attack").length
+	
+	# Spawn fireball at configured ratio of animation duration
+	var cast_ratio = clamp(attack_cast_point_ratio, 0.0, 1.0)
+	var cast_time = attack_duration * cast_ratio
+	var recovery_time = max(0.0, attack_duration - cast_time)
+	
+	await get_tree().create_timer(cast_time).timeout
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
+	
+	# Wait for remainder of animation to complete
+	await get_tree().create_timer(recovery_time).timeout
+	
+	is_attacking = false
+	current_locomotion_state = ""
+	# Return to locomotion
+	_update_locomotion()
 
 func _spawn_magic_sphere() -> void:
 	if not magic_sphere_scene or not current_target:
