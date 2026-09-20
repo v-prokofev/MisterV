@@ -137,7 +137,7 @@ func _setup_animation_tree() -> void:
 		blend_tree.add_node(node_name, anim_node)
 		blend_tree.connect_node("locomotion", i, node_name)
 		
-	# 2. Attack Animation & Speed Node (Set to 1.0 in 4x Engine slow-mo)
+	# 2. Attack Animation Node
 	var attack_node = AnimationNodeAnimation.new()
 	attack_node.animation = "attack"
 	blend_tree.add_node("attack_anim", attack_node)
@@ -146,42 +146,12 @@ func _setup_animation_tree() -> void:
 	blend_tree.add_node("attack_speed", timescale)
 	blend_tree.connect_node("attack_speed", 0, "attack_anim")
 	
-	# 3. OneShot Upper Body Overlay Node
+	# 3. OneShot Full Body Mode (filter_enabled = false for full body test)
 	var oneshot = AnimationNodeOneShot.new()
 	oneshot.fadein_time = 0.1
 	oneshot.fadeout_time = 0.2
-	oneshot.filter_enabled = true
+	oneshot.filter_enabled = false # TEMPORARILY FULL BODY FOR ANGLE TEST
 	
-	var upper_body_paths = [
-		"Skeleton3D:mixamorig_Spine",
-		"Skeleton3D:mixamorig_Spine1",
-		"Skeleton3D:mixamorig_Spine2",
-		"Skeleton3D:mixamorig_Neck",
-		"Skeleton3D:mixamorig_Head",
-		"Skeleton3D:mixamorig_HeadTop_End",
-		"Skeleton3D:mixamorig_LeftShoulder",
-		"Skeleton3D:mixamorig_LeftArm",
-		"Skeleton3D:mixamorig_LeftForeArm",
-		"Skeleton3D:mixamorig_LeftHand",
-		"Skeleton3D:mixamorig_RightShoulder",
-		"Skeleton3D:mixamorig_RightArm",
-		"Skeleton3D:mixamorig_RightForeArm",
-		"Skeleton3D:mixamorig_RightHand",
-		"Skeleton3D:mixamorig_LeftHandThumb1", "Skeleton3D:mixamorig_LeftHandThumb2", "Skeleton3D:mixamorig_LeftHandThumb3", "Skeleton3D:mixamorig_LeftHandThumb4",
-		"Skeleton3D:mixamorig_LeftHandIndex1", "Skeleton3D:mixamorig_LeftHandIndex2", "Skeleton3D:mixamorig_LeftHandIndex3", "Skeleton3D:mixamorig_LeftHandIndex4",
-		"Skeleton3D:mixamorig_LeftHandMiddle1", "Skeleton3D:mixamorig_LeftHandMiddle2", "Skeleton3D:mixamorig_LeftHandMiddle3", "Skeleton3D:mixamorig_LeftHandMiddle4",
-		"Skeleton3D:mixamorig_LeftHandRing1", "Skeleton3D:mixamorig_LeftHandRing2", "Skeleton3D:mixamorig_LeftHandRing3", "Skeleton3D:mixamorig_LeftHandRing4",
-		"Skeleton3D:mixamorig_LeftHandPinky1", "Skeleton3D:mixamorig_LeftHandPinky2", "Skeleton3D:mixamorig_LeftHandPinky3", "Skeleton3D:mixamorig_LeftHandPinky4",
-		"Skeleton3D:mixamorig_RightHandThumb1", "Skeleton3D:mixamorig_RightHandThumb2", "Skeleton3D:mixamorig_RightHandThumb3", "Skeleton3D:mixamorig_RightHandThumb4",
-		"Skeleton3D:mixamorig_RightHandIndex1", "Skeleton3D:mixamorig_RightHandIndex2", "Skeleton3D:mixamorig_RightHandIndex3", "Skeleton3D:mixamorig_RightHandIndex4",
-		"Skeleton3D:mixamorig_RightHandMiddle1", "Skeleton3D:mixamorig_RightHandMiddle2", "Skeleton3D:mixamorig_RightHandMiddle3", "Skeleton3D:mixamorig_RightHandMiddle4",
-		"Skeleton3D:mixamorig_RightHandRing1", "Skeleton3D:mixamorig_RightHandRing2", "Skeleton3D:mixamorig_RightHandRing3", "Skeleton3D:mixamorig_RightHandRing4",
-		"Skeleton3D:mixamorig_RightHandPinky1", "Skeleton3D:mixamorig_RightHandPinky2", "Skeleton3D:mixamorig_RightHandPinky3", "Skeleton3D:mixamorig_RightHandPinky4"
-	]
-	
-	for p in upper_body_paths:
-		oneshot.set_filter_path(NodePath(p), true)
-		
 	blend_tree.add_node("attack_shot", oneshot)
 	
 	blend_tree.connect_node("attack_shot", 0, "locomotion")
@@ -191,7 +161,7 @@ func _setup_animation_tree() -> void:
 	anim_tree.tree_root = blend_tree
 	anim_tree.active = true
 	anim_tree.set("parameters/attack_speed/scale", 1.0)
-	print("Slow Motion Mode Active (Engine.time_scale = 0.25)")
+	print("TEMPORARY TEST: Full Body Attack Mode Active (filter_enabled = false)")
 
 func _physics_process(delta: float) -> void:
 	# 0. Smooth Camera Zoom FOV
