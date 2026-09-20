@@ -141,19 +141,18 @@ func _perform_attack(target_player: Node3D) -> void:
 	can_attack = false
 	_play_anim("attack")
 	
-	# Attack hit point delay (0.45 seconds into attack animation)
-	await get_tree().create_timer(0.45).timeout
-	if is_instance_valid(target_player) and not is_dead:
-		var current_dist = global_position.distance_to(target_player.global_position)
-		if current_dist <= attack_range + 0.8:
-			if target_player.has_method("take_damage"):
-				target_player.take_damage(attack_damage)
-				print("Monster ", monster_name, " attacked player for ", attack_damage, " damage!")
+	# Attack hit point delay (0.65s into sword swing animation)
+	await get_tree().create_timer(0.65).timeout
+	if not is_dead and is_instance_valid(target_player):
+		if target_player.has_method("take_damage"):
+			target_player.take_damage(attack_damage)
+			print("Monster ", monster_name, " attacked player for ", attack_damage, " damage!")
 				
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.55).timeout
 	is_attacking = false
 	
-	await get_tree().create_timer(attack_cooldown - 0.95).timeout
+	var remaining_cd = max(0.1, attack_cooldown - 1.2)
+	await get_tree().create_timer(remaining_cd).timeout
 	can_attack = true
 
 func take_damage(amount: float) -> void:
