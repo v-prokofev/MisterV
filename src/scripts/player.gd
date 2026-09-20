@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 @export var move_speed: float = 6.5
 @export var attack_range: float = 25.0
-@export var attack_cooldown: float = 0.75
+@export var attack_cooldown: float = 3.0
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
 
 # Camera Zoom Parameters
@@ -28,6 +28,10 @@ var relative_move_dir: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
+	
+	# 4x Slow Motion mode for visual inspection
+	Engine.time_scale = 0.25
+	
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
@@ -133,7 +137,7 @@ func _setup_animation_tree() -> void:
 		blend_tree.add_node(node_name, anim_node)
 		blend_tree.connect_node("locomotion", i, node_name)
 		
-	# 2. Attack Animation & Speed Node (3.2x speed for complete 0.71s duration within 0.75s cooldown)
+	# 2. Attack Animation & Speed Node (Set to 1.0 in 4x Engine slow-mo)
 	var attack_node = AnimationNodeAnimation.new()
 	attack_node.animation = "attack"
 	blend_tree.add_node("attack_anim", attack_node)
@@ -144,8 +148,8 @@ func _setup_animation_tree() -> void:
 	
 	# 3. OneShot Upper Body Overlay Node
 	var oneshot = AnimationNodeOneShot.new()
-	oneshot.fadein_time = 0.05
-	oneshot.fadeout_time = 0.1
+	oneshot.fadein_time = 0.1
+	oneshot.fadeout_time = 0.2
 	oneshot.filter_enabled = true
 	
 	var upper_body_paths = [
@@ -186,8 +190,8 @@ func _setup_animation_tree() -> void:
 	
 	anim_tree.tree_root = blend_tree
 	anim_tree.active = true
-	anim_tree.set("parameters/attack_speed/scale", 3.2)
-	print("AnimationTree successfully set up for dual-layer blending!")
+	anim_tree.set("parameters/attack_speed/scale", 1.0)
+	print("Slow Motion Mode Active (Engine.time_scale = 0.25)")
 
 func _physics_process(delta: float) -> void:
 	# 0. Smooth Camera Zoom FOV
@@ -279,8 +283,8 @@ func _trigger_spell_cast() -> void:
 	if anim_tree:
 		anim_tree.set("parameters/attack_shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		
-	# Wait for forward hand extension (0.22s at 3.2x speed)
-	await get_tree().create_timer(0.22).timeout
+	# Wait for forward hand extension in slow-motion
+	await get_tree().create_timer(0.7).timeout
 	
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
