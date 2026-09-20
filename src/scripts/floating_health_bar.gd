@@ -88,7 +88,7 @@ func _build_ui() -> void:
 	progress_bar.add_theme_stylebox_override("background", back_style)
 	progress_bar.add_theme_stylebox_override("fill", fill_style)
 	progress_bar.max_value = max_hp
-	progress_bar.value = current_health if "current_health" in self else current_hp
+	progress_bar.value = current_hp
 	container.add_child(progress_bar)
 	
 	# Huge numeric HP label (font size 42)
