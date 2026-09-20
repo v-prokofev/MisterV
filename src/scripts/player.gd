@@ -410,6 +410,8 @@ func _find_nearest_target() -> Node3D:
 	for dummy in dummies:
 		if not is_instance_valid(dummy):
 			continue
+		if dummy.has_method("is_targetable") and not dummy.is_targetable():
+			continue
 		var dist = global_position.distance_to(dummy.global_position)
 		if dist < min_dist:
 			min_dist = dist
