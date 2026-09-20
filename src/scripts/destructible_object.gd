@@ -12,6 +12,8 @@ var is_destroyed: bool = false
 
 var original_material: StandardMaterial3D
 
+var health_bar = null
+
 func _ready() -> void:
 	add_to_group("dummies")
 	add_to_group("targets")
@@ -26,6 +28,11 @@ func _ready() -> void:
 		original_material.emission = object_color
 		original_material.emission_energy_multiplier = 1.5
 		mesh_instance.set_surface_override_material(0, original_material)
+		
+	var bar_script = preload("res://scripts/floating_health_bar.gd")
+	health_bar = bar_script.new()
+	add_child(health_bar)
+	health_bar.setup(max_health, name, object_color, 2.0)
 
 func is_targetable() -> bool:
 	return not is_destroyed
@@ -37,6 +44,9 @@ func take_damage(amount: float) -> void:
 	current_health -= amount
 	print("Destructible ", name, " took ", amount, " damage! Current HP: ", current_health)
 	
+	if health_bar:
+		health_bar.update_hp(current_health)
+		
 	_flash_hit()
 	
 	if current_health <= 0:

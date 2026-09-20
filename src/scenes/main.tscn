@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://bplayer_scene_001" path="res://scenes/player.tscn" id="1_player_scene"]
 [ext_resource type="PackedScene" uid="uid://btarget_dummy_001" path="res://scenes/target_dummy.tscn" id="2_dummy_scene"]
 [ext_resource type="PackedScene" uid="uid://bdestructible_obj_001" path="res://scenes/destructible_object.tscn" id="3_destructible_scene"]
+[ext_resource type="PackedScene" uid="uid://bmonster_scene_001" path="res://scenes/monster.tscn" id="4_monster_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.1, 0.08, 0.18, 1.0)
@@ -108,4 +109,18 @@ object_color = Color(0.95, 0.2, 0.7, 1)
 [node name="BlueCrystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 6)
 object_color = Color(0.2, 0.85, 1, 1)
+
+[node name="Monsters" type="Node3D" parent="."]
+
+[node name="MakraMonster1" parent="Monsters" instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -4)
+monster_name = "Монстр Макра #1"
+
+[node name="MakraMonster2" parent="Monsters" instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -5)
+monster_name = "Монстр Макра #2"
+
+[node name="MakraMonster3" parent="Monsters" instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+monster_name = "Монстр Макра #3"
 

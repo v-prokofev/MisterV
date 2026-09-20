@@ -42,13 +42,24 @@ const LOWER_BODY_BONE_NAMES: Array[String] = [
 	"RightUpLeg", "RightLeg", "RightFoot", "RightToeBase", "RightToe_End",
 ]
 
+@export var max_health: float = 100.0
+var current_health: float = 100.0
+var is_dead: bool = false
+
+var health_bar_3d = null
+var hud_canvas: CanvasLayer = null
+var hud_progress_bar: ProgressBar = null
+var hud_hp_label: Label = null
+
 func _ready() -> void:
 	add_to_group("player")
 	Engine.time_scale = 1.0
+	current_health = max_health
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
 	_setup_attack_range_ring()
+	_setup_player_health_ui()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -468,4 +479,129 @@ func _update_attack_ring_mesh() -> void:
 	
 	torus.material = mat
 	attack_ring_mesh_instance.mesh = torus
+
+func _setup_player_health_ui() -> void:
+	var bar_script = preload("res://scripts/floating_health_bar.gd")
+	health_bar_3d = bar_script.new()
+	add_child(health_bar_3d)
+	health_bar_3d.setup(max_health, "Vampire Mage", Color(0.15, 0.85, 0.35), 2.2)
+
+	hud_canvas = CanvasLayer.new()
+	add_child(hud_canvas)
+	
+	var margin = MarginContainer.new()
+	margin.position = Vector2(20, 20)
+	margin.custom_minimum_size = Vector2(280, 70)
+	hud_canvas.add_child(margin)
+	
+	var panel = Panel.new()
+	var bg_panel = StyleBoxFlat.new()
+	bg_panel.bg_color = Color(0.08, 0.09, 0.14, 0.85)
+	bg_panel.corner_radius_top_left = 8
+	bg_panel.corner_radius_top_right = 8
+	bg_panel.corner_radius_bottom_left = 8
+	bg_panel.corner_radius_bottom_right = 8
+	bg_panel.border_width_left = 2
+	bg_panel.border_width_top = 2
+	bg_panel.border_width_right = 2
+	bg_panel.border_width_bottom = 2
+	bg_panel.border_color = Color(0.25, 0.55, 0.95, 0.9)
+	panel.add_theme_stylebox_override("panel", bg_panel)
+	panel.custom_minimum_size = Vector2(280, 70)
+	margin.add_child(panel)
+	
+	var title_lbl = Label.new()
+	title_lbl.position = Vector2(14, 6)
+	title_lbl.size = Vector2(252, 20)
+	title_lbl.text = "🧙‍♂️ Багровый Чародей (Vampire Mage)"
+	title_lbl.add_theme_font_size_override("font_size", 13)
+	title_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	panel.add_child(title_lbl)
+	
+	var fill_style = StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.15, 0.85, 0.35)
+	fill_style.corner_radius_top_left = 5
+	fill_style.corner_radius_top_right = 5
+	fill_style.corner_radius_bottom_left = 5
+	fill_style.corner_radius_bottom_right = 5
+	
+	var back_style = StyleBoxFlat.new()
+	back_style.bg_color = Color(0.15, 0.18, 0.22, 0.9)
+	back_style.corner_radius_top_left = 5
+	back_style.corner_radius_top_right = 5
+	back_style.corner_radius_bottom_left = 5
+	back_style.corner_radius_bottom_right = 5
+	
+	hud_progress_bar = ProgressBar.new()
+	hud_progress_bar.position = Vector2(14, 30)
+	hud_progress_bar.size = Vector2(252, 28)
+	hud_progress_bar.show_percentage = false
+	hud_progress_bar.add_theme_stylebox_override("background", back_style)
+	hud_progress_bar.add_theme_stylebox_override("fill", fill_style)
+	hud_progress_bar.max_value = max_health
+	hud_progress_bar.value = current_health
+	panel.add_child(hud_progress_bar)
+	
+	hud_hp_label = Label.new()
+	hud_hp_label.position = Vector2(14, 34)
+	hud_hp_label.size = Vector2(252, 20)
+	hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+	hud_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_hp_label.add_theme_font_size_override("font_size", 14)
+	hud_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	hud_hp_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	hud_hp_label.add_theme_constant_override("outline_size", 4)
+	panel.add_child(hud_hp_label)
+
+func take_damage(amount: float) -> void:
+	if is_dead:
+		return
+	current_health = max(0.0, current_health - amount)
+	print("Player took ", amount, " damage! HP: ", current_health)
+	
+	if health_bar_3d:
+		health_bar_3d.update_hp(current_health)
+	if hud_progress_bar:
+		hud_progress_bar.value = current_health
+	if hud_hp_label:
+		hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+		
+	_flash_player_hit()
+	
+	if current_health <= 0:
+		_on_player_die()
+
+func is_dead_state() -> bool:
+	return is_dead
+
+func _flash_player_hit() -> void:
+	if not vampire_model:
+		return
+	var mesh_inst: MeshInstance3D = vampire_model.find_child("Meshy_AI__0920153324_texture", true, false)
+	if not mesh_inst:
+		return
+	var flash_mat = StandardMaterial3D.new()
+	flash_mat.albedo_color = Color(1.0, 0.2, 0.2)
+	flash_mat.emission_enabled = true
+	flash_mat.emission = Color(1.0, 0.2, 0.2)
+	flash_mat.emission_energy_multiplier = 3.0
+	mesh_inst.set_surface_override_material(0, flash_mat)
+	
+	await get_tree().create_timer(0.12).timeout
+	if is_instance_valid(mesh_inst):
+		_setup_character_texture()
+
+func _on_player_die() -> void:
+	is_dead = true
+	print("PLAYER WAS DEFEATED! Auto-respawning in 4 seconds...")
+	await get_tree().create_timer(4.0).timeout
+	current_health = max_health
+	is_dead = false
+	if health_bar_3d:
+		health_bar_3d.update_hp(current_health)
+	if hud_progress_bar:
+		hud_progress_bar.value = current_health
+	if hud_hp_label:
+		hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+	print("PLAYER HAS HEALED TO FULL HP!")
 
