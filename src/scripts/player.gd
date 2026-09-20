@@ -11,10 +11,11 @@ extends CharacterBody3D
 @onready var camera: Camera3D = $Camera3D
 
 var anim_player: AnimationPlayer = null
+var anim_tree: AnimationTree = null
+
 var current_target: Node3D = null
 var attack_timer: float = 0.0
-var current_locomotion_anim: String = ""
-var is_casting_spell: bool = false
+var current_locomotion_state: String = "idle"
 
 # Relative movement direction vector (X = right/left strafe, Y = forward/back relative to facing)
 var relative_move_dir: Vector2 = Vector2.ZERO
@@ -23,6 +24,7 @@ func _ready() -> void:
 	add_to_group("player")
 	_setup_character_texture()
 	_setup_animation_library()
+	_setup_animation_tree()
 
 func _setup_character_texture() -> void:
 	if not vampire_model:
@@ -70,13 +72,7 @@ func _setup_animation_library() -> void:
 			if source_ap and source_ap.has_animation("mixamo_com"):
 				var anim = source_ap.get_animation("mixamo_com").duplicate()
 				anim.loop_mode = Animation.LOOP_LINEAR if anim_name != "attack" else Animation.LOOP_NONE
-				
 				_make_animation_in_place(anim)
-				
-				if anim_name == "attack":
-					# Filter out lower body tracks so attack only affects upper body
-					_filter_upper_body_only(anim)
-					
 				library.add_animation(anim_name, anim)
 				print("Registered animation: ", anim_name)
 			inst.queue_free()
@@ -94,25 +90,92 @@ func _make_animation_in_place(anim: Animation) -> void:
 						var in_place_pos = Vector3(initial_pos.x, current_pos.y, initial_pos.z)
 						anim.track_set_key_value(i, k, in_place_pos)
 
-func _filter_upper_body_only(anim: Animation) -> void:
-	# Removes lower body tracks so attack animation overlays seamlessly on legs
-	var lower_body_keywords = [
-		"Hips", "hips",
-		"LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase", "LeftToe_End",
-		"RightUpLeg", "RightLeg", "RightFoot", "RightToeBase", "RightToe_End"
+func _setup_animation_tree() -> void:
+	if not vampire_model or not anim_player:
+		return
+		
+	anim_tree = AnimationTree.new()
+	vampire_model.add_child(anim_tree)
+	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
+	
+	var blend_tree = AnimationNodeBlendTree.new()
+	
+	# 1. Locomotion Transition Node
+	var trans = AnimationNodeTransition.new()
+	trans.input_count = 5
+	trans.set_input_name(0, "idle")
+	trans.set_input_name(1, "run_forward")
+	trans.set_input_name(2, "run_back")
+	trans.set_input_name(3, "run_left")
+	trans.set_input_name(4, "run_right")
+	
+	blend_tree.add_node("locomotion", trans)
+	
+	# Add animation nodes for locomotion
+	var anim_names = ["idle", "run_forward", "run_back", "run_left", "run_right"]
+	for i in range(anim_names.size()):
+		var node_name = "anim_" + anim_names[i]
+		var anim_node = AnimationNodeAnimation.new()
+		anim_node.animation = anim_names[i]
+		blend_tree.add_node(node_name, anim_node)
+		blend_tree.connect_node("locomotion", i, node_name)
+		
+	# 2. Attack Animation & Speed Node
+	var attack_node = AnimationNodeAnimation.new()
+	attack_node.animation = "attack"
+	blend_tree.add_node("attack_anim", attack_node)
+	
+	var timescale = AnimationNodeTimeScale.new()
+	blend_tree.add_node("attack_speed", timescale)
+	blend_tree.connect_node("attack_speed", 0, "attack_anim")
+	
+	# 3. OneShot Upper Body Overlay Node
+	var oneshot = AnimationNodeOneShot.new()
+	oneshot.fadein_time = 0.08
+	oneshot.fadeout_time = 0.12
+	oneshot.filter_enabled = true
+	
+	var upper_body_paths = [
+		"Skeleton3D:mixamorig_Spine",
+		"Skeleton3D:mixamorig_Spine1",
+		"Skeleton3D:mixamorig_Spine2",
+		"Skeleton3D:mixamorig_Neck",
+		"Skeleton3D:mixamorig_Head",
+		"Skeleton3D:mixamorig_HeadTop_End",
+		"Skeleton3D:mixamorig_LeftShoulder",
+		"Skeleton3D:mixamorig_LeftArm",
+		"Skeleton3D:mixamorig_LeftForeArm",
+		"Skeleton3D:mixamorig_LeftHand",
+		"Skeleton3D:mixamorig_RightShoulder",
+		"Skeleton3D:mixamorig_RightArm",
+		"Skeleton3D:mixamorig_RightForeArm",
+		"Skeleton3D:mixamorig_RightHand",
+		"Skeleton3D:mixamorig_LeftHandThumb1", "Skeleton3D:mixamorig_LeftHandThumb2", "Skeleton3D:mixamorig_LeftHandThumb3", "Skeleton3D:mixamorig_LeftHandThumb4",
+		"Skeleton3D:mixamorig_LeftHandIndex1", "Skeleton3D:mixamorig_LeftHandIndex2", "Skeleton3D:mixamorig_LeftHandIndex3", "Skeleton3D:mixamorig_LeftHandIndex4",
+		"Skeleton3D:mixamorig_LeftHandMiddle1", "Skeleton3D:mixamorig_LeftHandMiddle2", "Skeleton3D:mixamorig_LeftHandMiddle3", "Skeleton3D:mixamorig_LeftHandMiddle4",
+		"Skeleton3D:mixamorig_LeftHandRing1", "Skeleton3D:mixamorig_LeftHandRing2", "Skeleton3D:mixamorig_LeftHandRing3", "Skeleton3D:mixamorig_LeftHandRing4",
+		"Skeleton3D:mixamorig_LeftHandPinky1", "Skeleton3D:mixamorig_LeftHandPinky2", "Skeleton3D:mixamorig_LeftHandPinky3", "Skeleton3D:mixamorig_LeftHandPinky4",
+		"Skeleton3D:mixamorig_RightHandThumb1", "Skeleton3D:mixamorig_RightHandThumb2", "Skeleton3D:mixamorig_RightHandThumb3", "Skeleton3D:mixamorig_RightHandThumb4",
+		"Skeleton3D:mixamorig_RightHandIndex1", "Skeleton3D:mixamorig_RightHandIndex2", "Skeleton3D:mixamorig_RightHandIndex3", "Skeleton3D:mixamorig_RightHandIndex4",
+		"Skeleton3D:mixamorig_RightHandMiddle1", "Skeleton3D:mixamorig_RightHandMiddle2", "Skeleton3D:mixamorig_RightHandMiddle3", "Skeleton3D:mixamorig_RightHandMiddle4",
+		"Skeleton3D:mixamorig_RightHandRing1", "Skeleton3D:mixamorig_RightHandRing2", "Skeleton3D:mixamorig_RightHandRing3", "Skeleton3D:mixamorig_RightHandRing4",
+		"Skeleton3D:mixamorig_RightHandPinky1", "Skeleton3D:mixamorig_RightHandPinky2", "Skeleton3D:mixamorig_RightHandPinky3", "Skeleton3D:mixamorig_RightHandPinky4"
 	]
 	
-	var tracks_to_remove = []
-	for i in range(anim.get_track_count()):
-		var path_str = String(anim.track_get_path(i))
-		for kw in lower_body_keywords:
-			if kw in path_str:
-				tracks_to_remove.append(i)
-				break
-				
-	tracks_to_remove.reverse()
-	for idx in tracks_to_remove:
-		anim.remove_track(idx)
+	for p in upper_body_paths:
+		oneshot.set_filter_path(NodePath(p), true)
+		
+	blend_tree.add_node("attack_shot", oneshot)
+	
+	# Connect locomotion -> slot 0 (base), attack_speed -> slot 1 (overlay)
+	blend_tree.connect_node("attack_shot", 0, "locomotion")
+	blend_tree.connect_node("attack_shot", 1, "attack_speed")
+	blend_tree.connect_node("output", 0, "attack_shot")
+	
+	anim_tree.tree_root = blend_tree
+	anim_tree.active = true
+	anim_tree.set("parameters/attack_speed/scale", 2.2)
+	print("AnimationTree successfully set up for dual-layer blending!")
 
 func _physics_process(delta: float) -> void:
 	# 1. Handle Movement Input
@@ -168,7 +231,7 @@ func _physics_process(delta: float) -> void:
 	visuals.rotation.z = lerp(visuals.rotation.z, -relative_move_dir.x * 0.12, delta * 10.0)
 	visuals.rotation.x = lerp(visuals.rotation.x, relative_move_dir.y * 0.08, delta * 10.0)
 
-	# 5. Update Locomotion Animation
+	# 5. Update Locomotion State (Legs ALWAYS run locomotion!)
 	_update_locomotion()
 
 	# 6. Automatic Spell Casting
@@ -178,45 +241,33 @@ func _physics_process(delta: float) -> void:
 		_trigger_spell_cast()
 
 func _update_locomotion() -> void:
-	if not anim_player or is_casting_spell:
+	if not anim_tree:
 		return
 		
-	var target_anim = "idle"
+	var target_state = "idle"
 	
 	if velocity.length() > 0.2:
 		if abs(relative_move_dir.x) > abs(relative_move_dir.y):
-			target_anim = "run_right" if relative_move_dir.x > 0 else "run_left"
+			target_state = "run_right" if relative_move_dir.x > 0 else "run_left"
 		else:
-			target_anim = "run_forward" if relative_move_dir.y > 0 else "run_back"
+			target_state = "run_forward" if relative_move_dir.y > 0 else "run_back"
 
-	if current_locomotion_anim != target_anim:
-		current_locomotion_anim = target_anim
-		if anim_player.has_animation(target_anim):
-			anim_player.play(target_anim, 0.2)
+	if current_locomotion_state != target_state:
+		current_locomotion_state = target_state
+		anim_tree.set("parameters/locomotion/transition_request", target_state)
 
 func _trigger_spell_cast() -> void:
 	if not current_target or not is_instance_valid(current_target):
 		return
 		
-	is_casting_spell = true
-	
-	# Play fast upper-body magic attack animation (2.2x speed)
-	if anim_player and anim_player.has_animation("attack"):
-		anim_player.play("attack", 0.1, 2.2) # custom_speed = 2.2x
+	if anim_tree:
+		anim_tree.set("parameters/attack_shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		
-	# Wait for cast gesture completion (fireball releases right at forward arm extension)
-	await get_tree().create_timer(0.25).timeout
+	# Wait for cast gesture completion (fireball detaches right as hand thrusts forward)
+	await get_tree().create_timer(0.24).timeout
 	
-	# Spawn magic sphere projectile at cast point
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
-		
-	await get_tree().create_timer(0.15).timeout
-	is_casting_spell = false
-	
-	# Return to running/idle locomotion smoothly
-	if anim_player and anim_player.has_animation(current_locomotion_anim):
-		anim_player.play(current_locomotion_anim, 0.2)
 
 func _spawn_magic_sphere() -> void:
 	if not magic_sphere_scene or not current_target:
