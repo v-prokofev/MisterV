@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @export var move_speed: float = 6.5
-@export var attack_range: float = 3.7
+@export var attack_range: float = 1.233
 @export var attack_cooldown: float = 2.4
 @export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
