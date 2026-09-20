@@ -61,33 +61,51 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
 
 [node name="Destructibles" type="Node3D" parent="."]
 
-[node name="Crystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -2.5)
+[node name="PinkCrystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -14)
+object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="Crystal2" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0, -2.0)
+[node name="BlueCrystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -14)
+object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="Crystal3" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, -9.0)
+[node name="PinkCrystal2" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 0)
+object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="Crystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, -10.0)
+[node name="BlueCrystal2" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 0)
+object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="Crystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 0, 2.0)
+[node name="PinkCrystal3" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 14)
+object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="Crystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 1.0)
+[node name="BlueCrystal3" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 14)
+object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="Crystal7" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0, -13.0)
+[node name="PinkCrystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -18)
+object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="Crystal8" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0, 0, -6.0)
+[node name="BlueCrystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="Crystal9" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0, -6.5)
+[node name="PinkCrystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -6)
+object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="Crystal10" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0, -6.0)
+[node name="BlueCrystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
+object_color = Color(0.2, 0.85, 1, 1)
+
+[node name="PinkCrystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 6)
+object_color = Color(0.95, 0.2, 0.7, 1)
+
+[node name="BlueCrystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 6)
+object_color = Color(0.2, 0.85, 1, 1)
 

@@ -354,12 +354,6 @@ func _physics_process(delta: float) -> void:
 	_upper_blend_target = 1.0 if (is_attacking or has_target) else 0.0
 
 	is_moving = (input_dir != Vector2.ZERO and velocity.length() > 0.3)
-	if anim_tree and anim_tree.tree_root:
-		var body_blend = anim_tree.tree_root.get_node("body_blend") as AnimationNodeBlend2
-		if body_blend:
-			# When moving: filter upper body so legs run/strafe while upper body stays aimed at target.
-			# When stationary: disable filter so full body faces target cleanly (no leg dancing).
-			body_blend.filter_enabled = is_moving
 
 	_upper_blend_current = lerp(_upper_blend_current, _upper_blend_target, delta * 14.0)
 	if anim_tree:
