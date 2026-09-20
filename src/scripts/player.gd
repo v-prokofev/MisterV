@@ -47,7 +47,6 @@ func _ready() -> void:
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
-	_setup_skeleton_modifier()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -112,17 +111,32 @@ func _setup_animation_library() -> void:
 			print("Registered animation: ", anim_name)
 		inst.queue_free()
 
+const BASELINE_HIPS_Y_RAD: float = deg_to_rad(-58.2)
+
 func _make_animation_in_place(anim: Animation) -> void:
 	for i in range(anim.get_track_count()):
-		if anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
-			var path_str = String(anim.track_get_path(i))
-			if "Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str:
-				var key_count = anim.track_get_key_count(i)
-				if key_count > 0:
-					var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
+		var path_str = String(anim.track_get_path(i))
+		var is_hips = ("Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str)
+
+		if is_hips and anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
+			var key_count = anim.track_get_key_count(i)
+			if key_count > 0:
+				var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
+				for k in range(key_count):
+					var cur: Vector3 = anim.track_get_key_value(i, k)
+					anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
+
+		elif is_hips and anim.track_get_type(i) == Animation.TYPE_ROTATION_3D:
+			var key_count = anim.track_get_key_count(i)
+			if key_count > 0:
+				var q0: Quaternion = anim.track_get_key_value(i, 0)
+				var initial_y: float = q0.get_euler().y
+				var delta_y: float = angle_difference(initial_y, BASELINE_HIPS_Y_RAD)
+				if abs(delta_y) > 0.01:
+					var q_align := Quaternion(Vector3.UP, delta_y)
 					for k in range(key_count):
-						var cur: Vector3 = anim.track_get_key_value(i, k)
-						anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
+						var cur_q: Quaternion = anim.track_get_key_value(i, k)
+						anim.track_set_key_value(i, k, q_align * cur_q)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Animation Tree Architecture
@@ -433,48 +447,4 @@ func _find_nearest_target() -> Node3D:
 			min_dist = dist
 			nearest = dummy
 	return nearest
-
-func _setup_skeleton_modifier() -> void:
-	if not vampire_model:
-		return
-	var skel: Skeleton3D = vampire_model.find_child("Skeleton3D", true, false) as Skeleton3D
-	if not skel:
-		print("Skeleton3D not found for modifier")
-		return
-	var modifier := TorsoAimModifier.new()
-	modifier.player = self
-	skel.add_child(modifier)
-	modifier.active = true
-	print("TorsoAimModifier attached to Skeleton3D successfully")
-
-class TorsoAimModifier extends SkeletonModifier3D:
-	var player: CharacterBody3D = null
-	var idle_hips_y: float = deg_to_rad(-58.2)
-
-	func _process_modification() -> void:
-		var skel := get_skeleton()
-		if not skel or not player:
-			return
-
-		var has_target := (player.current_target != null and is_instance_valid(player.current_target))
-		if not (player.is_moving and has_target):
-			return
-
-		var hips_idx := skel.find_bone("mixamorig_Hips")
-		var spine_idx := skel.find_bone("mixamorig_Spine")
-		if hips_idx < 0 or spine_idx < 0:
-			return
-
-		var hips_rot := skel.get_bone_pose_rotation(hips_idx)
-		var hips_y := hips_rot.get_euler().y
-		var delta_y := angle_difference(idle_hips_y, hips_y)
-
-		if abs(delta_y) < 0.001:
-			return
-
-		var q_yaw := Quaternion(Vector3.UP, -delta_y)
-		var q_corr_local := hips_rot.inverse() * q_yaw * hips_rot
-
-		var spine_rot := skel.get_bone_pose_rotation(spine_idx)
-		skel.set_bone_pose_rotation(spine_idx, q_corr_local * spine_rot)
 
