@@ -10,7 +10,7 @@ extends CharacterBody3D
 @export var min_fov: float = 30.0
 @export var max_fov: float = 90.0
 @export var zoom_speed: float = 5.0
-var target_fov: float = 70.0
+var target_fov: float = 58.0
 
 @onready var visuals: Node3D = $Visuals
 @onready var vampire_model: Node3D = $Visuals/VampireModel
@@ -491,49 +491,49 @@ func _setup_player_health_ui() -> void:
 	
 	var margin = MarginContainer.new()
 	margin.position = Vector2(20, 20)
-	margin.custom_minimum_size = Vector2(280, 80)
+	margin.custom_minimum_size = Vector2(200, 44)
 	hud_canvas.add_child(margin)
 	
 	var panel = Panel.new()
 	var bg_panel = StyleBoxFlat.new()
-	bg_panel.bg_color = Color(0.06, 0.07, 0.1, 0.85)
-	bg_panel.corner_radius_top_left = 6
-	bg_panel.corner_radius_top_right = 6
-	bg_panel.corner_radius_bottom_left = 6
-	bg_panel.corner_radius_bottom_right = 6
+	bg_panel.bg_color = Color(0.05, 0.06, 0.09, 0.55)
+	bg_panel.corner_radius_top_left = 12
+	bg_panel.corner_radius_top_right = 12
+	bg_panel.corner_radius_bottom_left = 12
+	bg_panel.corner_radius_bottom_right = 12
 	bg_panel.border_width_left = 0
 	bg_panel.border_width_top = 0
 	bg_panel.border_width_right = 0
 	bg_panel.border_width_bottom = 0
 	panel.add_theme_stylebox_override("panel", bg_panel)
-	panel.custom_minimum_size = Vector2(280, 80)
+	panel.custom_minimum_size = Vector2(200, 44)
 	margin.add_child(panel)
 	
 	var fill_style = StyleBoxFlat.new()
-	fill_style.bg_color = Color(0.15, 0.85, 0.35)
-	fill_style.corner_radius_top_left = 5
-	fill_style.corner_radius_top_right = 5
-	fill_style.corner_radius_bottom_left = 5
-	fill_style.corner_radius_bottom_right = 5
+	fill_style.bg_color = Color(0.15, 0.85, 0.35, 0.75)
+	fill_style.corner_radius_top_left = 10
+	fill_style.corner_radius_top_right = 10
+	fill_style.corner_radius_bottom_left = 10
+	fill_style.corner_radius_bottom_right = 10
 	fill_style.border_width_left = 0
 	fill_style.border_width_top = 0
 	fill_style.border_width_right = 0
 	fill_style.border_width_bottom = 0
 	
 	var back_style = StyleBoxFlat.new()
-	back_style.bg_color = Color(0.12, 0.14, 0.18, 0.9)
-	back_style.corner_radius_top_left = 5
-	back_style.corner_radius_top_right = 5
-	back_style.corner_radius_bottom_left = 5
-	back_style.corner_radius_bottom_right = 5
+	back_style.bg_color = Color(0.1, 0.12, 0.16, 0.45)
+	back_style.corner_radius_top_left = 10
+	back_style.corner_radius_top_right = 10
+	back_style.corner_radius_bottom_left = 10
+	back_style.corner_radius_bottom_right = 10
 	back_style.border_width_left = 0
 	back_style.border_width_top = 0
 	back_style.border_width_right = 0
 	back_style.border_width_bottom = 0
 	
 	hud_progress_bar = ProgressBar.new()
-	hud_progress_bar.position = Vector2(6, 6)
-	hud_progress_bar.size = Vector2(268, 68)
+	hud_progress_bar.position = Vector2(4, 4)
+	hud_progress_bar.size = Vector2(192, 36)
 	hud_progress_bar.show_percentage = false
 	hud_progress_bar.add_theme_stylebox_override("background", back_style)
 	hud_progress_bar.add_theme_stylebox_override("fill", fill_style)
@@ -542,15 +542,15 @@ func _setup_player_health_ui() -> void:
 	panel.add_child(hud_progress_bar)
 	
 	hud_hp_label = Label.new()
-	hud_hp_label.position = Vector2(6, 6)
-	hud_hp_label.size = Vector2(268, 68)
+	hud_hp_label.position = Vector2(4, 4)
+	hud_hp_label.size = Vector2(192, 36)
 	hud_hp_label.text = "%d" % int(ceil(current_health))
 	hud_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hud_hp_label.add_theme_font_size_override("font_size", 42)
-	hud_hp_label.add_theme_color_override("font_color", Color(0.06, 0.12, 0.08))
-	hud_hp_label.add_theme_color_override("font_outline_color", Color(0.85, 1.0, 0.88))
-	hud_hp_label.add_theme_constant_override("outline_size", 4)
+	hud_hp_label.add_theme_font_size_override("font_size", 24)
+	hud_hp_label.add_theme_color_override("font_color", Color(0.04, 0.1, 0.06, 0.95))
+	hud_hp_label.add_theme_color_override("font_outline_color", Color(0.85, 1.0, 0.88, 0.8))
+	hud_hp_label.add_theme_constant_override("outline_size", 3)
 	panel.add_child(hud_hp_label)
 
 func take_damage(amount: float) -> void:
