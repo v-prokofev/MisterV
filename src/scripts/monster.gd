@@ -35,57 +35,19 @@ func _setup_model_and_animations() -> void:
 	if not visuals:
 		return
 		
-	var model_loaded = false
-	if ResourceLoader.exists("res://assets/monsters/meshy_mob.glb"):
-		var model_scene: PackedScene = load("res://assets/monsters/meshy_mob.glb")
+	monster_model_inst = visuals.find_child("MeshyModel", true, false)
+	if not monster_model_inst and ResourceLoader.exists("res://assets/monsters/meshy_mob.glb"):
+		var model_scene = load("res://assets/monsters/meshy_mob.glb") as PackedScene
 		if model_scene:
 			monster_model_inst = model_scene.instantiate()
 			visuals.add_child(monster_model_inst)
-			monster_model_inst.scale = Vector3(1.0, 1.0, 1.0)
-			anim_player = monster_model_inst.find_child("AnimationPlayer", true, false)
-			model_loaded = true
-			print("Loaded meshy_mob.glb successfully!")
-	elif ResourceLoader.exists("res://assets/monsters/MakraRig.fbx"):
-		var model_scene: PackedScene = load("res://assets/monsters/MakraRig.fbx")
-		if model_scene:
-			monster_model_inst = model_scene.instantiate()
-			visuals.add_child(monster_model_inst)
-			monster_model_inst.scale = Vector3(1.2, 1.2, 1.2)
 			
-			var tex: Texture2D = load("res://assets/monsters/Makra.png")
-			var mesh_inst: MeshInstance3D = monster_model_inst.find_child("*", true, false) as MeshInstance3D
-			if mesh_inst and tex:
-				original_material = StandardMaterial3D.new()
-				original_material.albedo_texture = tex
-				original_material.roughness = 0.5
-				mesh_inst.set_surface_override_material(0, original_material)
-			model_loaded = true
-			
-	if not model_loaded:
-		monster_model_inst = Node3D.new()
-		visuals.add_child(monster_model_inst)
-		
-		var body_mesh_inst = MeshInstance3D.new()
-		var prism = CapsuleMesh.new()
-		prism.radius = 0.55
-		prism.height = 1.7
-		body_mesh_inst.mesh = prism
-		body_mesh_inst.position = Vector3(0, 0.85, 0)
-		
-		original_material = StandardMaterial3D.new()
-		original_material.albedo_color = Color(0.85, 0.15, 0.2)
-		original_material.roughness = 0.4
-		original_material.emission_enabled = true
-		original_material.emission = Color(0.9, 0.1, 0.2)
-		original_material.emission_energy_multiplier = 1.2
-		body_mesh_inst.material_override = original_material
-		monster_model_inst.add_child(body_mesh_inst)
+	if monster_model_inst:
+		anim_player = monster_model_inst.find_child("AnimationPlayer", true, false)
 	
 	if not anim_player:
-		anim_player = AnimationPlayer.new()
-		anim_player.name = "MonsterAnimPlayer"
-		add_child(anim_player)
-	
+		anim_player = find_child("AnimationPlayer", true, false)
+		
 	_play_anim("idle")
 
 func _setup_health_bar() -> void:
