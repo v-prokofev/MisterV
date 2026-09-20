@@ -104,15 +104,26 @@ func _setup_animation_library() -> void:
 
 func _make_animation_in_place(anim: Animation) -> void:
 	for i in range(anim.get_track_count()):
-		if anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
-			var path_str = String(anim.track_get_path(i))
-			if "Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str:
+		var path_str = String(anim.track_get_path(i))
+		if "Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str:
+			var track_type = anim.track_get_type(i)
+			if track_type == Animation.TYPE_POSITION_3D:
 				var key_count = anim.track_get_key_count(i)
 				if key_count > 0:
 					var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
 					for k in range(key_count):
 						var cur: Vector3 = anim.track_get_key_value(i, k)
 						anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
+			elif track_type == Animation.TYPE_ROTATION_3D:
+				var key_count = anim.track_get_key_count(i)
+				if key_count > 0:
+					for k in range(key_count):
+						var q: Quaternion = anim.track_get_key_value(i, k)
+						var euler = q.get_euler()
+						# Keep pitch (x) and roll (z) for natural hip sway/bounce,
+						# but zero out Y-yaw so hips and torso stay facing the target during strafing.
+						var q_no_yaw = Quaternion.from_euler(Vector3(euler.x, 0.0, euler.z))
+						anim.track_set_key_value(i, k, q_no_yaw)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Animation Tree Architecture
