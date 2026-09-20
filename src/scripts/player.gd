@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 @export var move_speed: float = 6.5
 @export var attack_range: float = 25.0
-@export var attack_cooldown: float = 3.0
+@export var attack_cooldown: float = 0.75
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
 
 # Camera Zoom Parameters
@@ -28,10 +28,7 @@ var relative_move_dir: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
-	
-	# 4x Slow Motion mode for visual inspection
-	Engine.time_scale = 0.25
-	
+	Engine.time_scale = 1.0 # Normal gameplay speed
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
@@ -146,12 +143,38 @@ func _setup_animation_tree() -> void:
 	blend_tree.add_node("attack_speed", timescale)
 	blend_tree.connect_node("attack_speed", 0, "attack_anim")
 	
-	# 3. OneShot Full Body Mode (filter_enabled = false for full body test)
+	# 3. Refined Upper Body Mask (Arms + Upper Chest only, excluding Head and Root Spine to prevent torso twisting)
 	var oneshot = AnimationNodeOneShot.new()
-	oneshot.fadein_time = 0.1
-	oneshot.fadeout_time = 0.2
-	oneshot.filter_enabled = false # TEMPORARILY FULL BODY FOR ANGLE TEST
+	oneshot.fadein_time = 0.08
+	oneshot.fadeout_time = 0.12
+	oneshot.filter_enabled = true
 	
+	var upper_body_paths = [
+		"Skeleton3D:mixamorig_Spine1",
+		"Skeleton3D:mixamorig_Spine2",
+		"Skeleton3D:mixamorig_LeftShoulder",
+		"Skeleton3D:mixamorig_LeftArm",
+		"Skeleton3D:mixamorig_LeftForeArm",
+		"Skeleton3D:mixamorig_LeftHand",
+		"Skeleton3D:mixamorig_RightShoulder",
+		"Skeleton3D:mixamorig_RightArm",
+		"Skeleton3D:mixamorig_RightForeArm",
+		"Skeleton3D:mixamorig_RightHand",
+		"Skeleton3D:mixamorig_LeftHandThumb1", "Skeleton3D:mixamorig_LeftHandThumb2", "Skeleton3D:mixamorig_LeftHandThumb3", "Skeleton3D:mixamorig_LeftHandThumb4",
+		"Skeleton3D:mixamorig_LeftHandIndex1", "Skeleton3D:mixamorig_LeftHandIndex2", "Skeleton3D:mixamorig_LeftHandIndex3", "Skeleton3D:mixamorig_LeftHandIndex4",
+		"Skeleton3D:mixamorig_LeftHandMiddle1", "Skeleton3D:mixamorig_LeftHandMiddle2", "Skeleton3D:mixamorig_LeftHandMiddle3", "Skeleton3D:mixamorig_LeftHandMiddle4",
+		"Skeleton3D:mixamorig_LeftHandRing1", "Skeleton3D:mixamorig_LeftHandRing2", "Skeleton3D:mixamorig_LeftHandRing3", "Skeleton3D:mixamorig_LeftHandRing4",
+		"Skeleton3D:mixamorig_LeftHandPinky1", "Skeleton3D:mixamorig_LeftHandPinky2", "Skeleton3D:mixamorig_LeftHandPinky3", "Skeleton3D:mixamorig_LeftHandPinky4",
+		"Skeleton3D:mixamorig_RightHandThumb1", "Skeleton3D:mixamorig_RightHandThumb2", "Skeleton3D:mixamorig_RightHandThumb3", "Skeleton3D:mixamorig_RightHandThumb4",
+		"Skeleton3D:mixamorig_RightHandIndex1", "Skeleton3D:mixamorig_RightHandIndex2", "Skeleton3D:mixamorig_RightHandIndex3", "Skeleton3D:mixamorig_RightHandIndex4",
+		"Skeleton3D:mixamorig_RightHandMiddle1", "Skeleton3D:mixamorig_RightHandMiddle2", "Skeleton3D:mixamorig_RightHandMiddle3", "Skeleton3D:mixamorig_RightHandMiddle4",
+		"Skeleton3D:mixamorig_RightHandRing1", "Skeleton3D:mixamorig_RightHandRing2", "Skeleton3D:mixamorig_RightHandRing3", "Skeleton3D:mixamorig_RightHandRing4",
+		"Skeleton3D:mixamorig_RightHandPinky1", "Skeleton3D:mixamorig_RightHandPinky2", "Skeleton3D:mixamorig_RightHandPinky3", "Skeleton3D:mixamorig_RightHandPinky4"
+	]
+	
+	for p in upper_body_paths:
+		oneshot.set_filter_path(NodePath(p), true)
+		
 	blend_tree.add_node("attack_shot", oneshot)
 	
 	blend_tree.connect_node("attack_shot", 0, "locomotion")
@@ -160,8 +183,8 @@ func _setup_animation_tree() -> void:
 	
 	anim_tree.tree_root = blend_tree
 	anim_tree.active = true
-	anim_tree.set("parameters/attack_speed/scale", 1.0)
-	print("TEMPORARY TEST: Full Body Attack Mode Active (filter_enabled = false)")
+	anim_tree.set("parameters/attack_speed/scale", 2.6)
+	print("Refined Upper Body Mask Applied (Spine1/Spine2 + Arms)")
 
 func _physics_process(delta: float) -> void:
 	# 0. Smooth Camera Zoom FOV
@@ -253,8 +276,8 @@ func _trigger_spell_cast() -> void:
 	if anim_tree:
 		anim_tree.set("parameters/attack_shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		
-	# Wait for forward hand extension in slow-motion
-	await get_tree().create_timer(0.7).timeout
+	# Wait for forward hand extension (0.24s at 2.6x speed)
+	await get_tree().create_timer(0.24).timeout
 	
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
