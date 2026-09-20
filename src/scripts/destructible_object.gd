@@ -2,7 +2,7 @@ extends StaticBody3D
 
 @export var max_health: float = 60.0
 @export var respawn_time: float = 10.0
-@export var object_color: Color = Color(0.2, 0.85, 1.0) # Glowing Cyan/Blue Crystal
+@export var object_color: Color = Color(0.95, 0.2, 0.7) # Glowing Pink/Magenta Crystal
 
 var current_health: float = 60.0
 var is_destroyed: bool = false

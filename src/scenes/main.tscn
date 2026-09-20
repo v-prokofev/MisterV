@@ -59,23 +59,6 @@ mesh = SubResource("BoxMesh_floor")
 [node name="Player" parent="." instance=ExtResource("1_player_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
 
-[node name="Dummies" type="Node3D" parent="."]
-
-[node name="TargetDummy1" parent="Dummies" instance=ExtResource("2_dummy_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -6)
-
-[node name="TargetDummy2" parent="Dummies" instance=ExtResource("2_dummy_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -8)
-
-[node name="TargetDummy3" parent="Dummies" instance=ExtResource("2_dummy_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12)
-
-[node name="TargetDummy4" parent="Dummies" instance=ExtResource("2_dummy_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 2)
-
-[node name="TargetDummy5" parent="Dummies" instance=ExtResource("2_dummy_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 1)
-
 [node name="Destructibles" type="Node3D" parent="."]
 
 [node name="Crystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
@@ -89,4 +72,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, -9.0)
 
 [node name="Crystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, -10.0)
+
+[node name="Crystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 0, 2.0)
+
+[node name="Crystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 1.0)
+
+[node name="Crystal7" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0, -13.0)
+
+[node name="Crystal8" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0, 0, -6.0)
+
+[node name="Crystal9" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0, -6.5)
+
+[node name="Crystal10" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0, -6.0)
 
