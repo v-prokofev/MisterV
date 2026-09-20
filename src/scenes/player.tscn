@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3 uid="uid://bplayer_scene_001"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player_script"]
+[ext_resource type="PackedScene" path="res://assets/player/Meshy_AI__0920153324_texture_obj.fbx" id="2_vampire_mesh"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.45
+height = 1.8
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 3
+script = ExtResource("1_player_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="VampireModel" parent="Visuals" instance=ExtResource("2_vampire_mesh")]
+transform = Transform3D(-170, 0, -1.48619e-05, 0, 170, 0, 1.48619e-05, 0, -170, 0, 0, 0)
+
+[node name="SpellCastPoint" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.25, -0.6)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+light_color = Color(0.9, 0.2, 0.3, 1)
+light_energy = 1.5
+omni_range = 3.5
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.743145, 0.669131, 0, -0.669131, 0.743145, 0, 9.5, 10.5)
+fov = 70.0
+current = true

@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://bmagic_sphere_001"]
+
+[ext_resource type="Script" path="res://scripts/magic_sphere.gd" id="1_sphere_script"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.95, 0.1, 0.2, 1.0)
+emission_enabled = true
+emission = Color(1.0, 0.25, 0.35, 1.0)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+radius = 0.3
+height = 0.6
+
+[node name="MagicSphere" type="Area3D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("1_sphere_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_1")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.2, 0.2, 1)
+light_energy = 2.5
+omni_range = 4.0

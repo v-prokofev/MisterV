@@ -1,0 +1,7 @@
+# Godot 4 build & cache artifacts
+.godot/
+*.translation
+
+# OS metadata
+.DS_Store
+Thumbs.db
