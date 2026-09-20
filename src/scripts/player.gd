@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @export var move_speed: float = 6.5
-@export var attack_range: float = 25.0
+@export var attack_range: float = 11.0
 @export var attack_cooldown: float = 2.4
 @export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
@@ -21,6 +21,7 @@ var anim_player: AnimationPlayer = null
 var anim_tree: AnimationTree = null
 var is_attacking: bool = false
 var is_moving: bool = false
+var attack_ring_mesh_instance: MeshInstance3D = null
 
 var current_target: Node3D = null
 var attack_timer: float = 0.0
@@ -47,6 +48,7 @@ func _ready() -> void:
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
+	_setup_attack_range_ring()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -434,8 +436,36 @@ func _find_nearest_target() -> Node3D:
 		if dummy.has_method("is_targetable") and not dummy.is_targetable():
 			continue
 		var dist = global_position.distance_to(dummy.global_position)
-		if dist < min_dist:
+		if dist <= min_dist:
 			min_dist = dist
 			nearest = dummy
 	return nearest
+
+func _setup_attack_range_ring() -> void:
+	attack_ring_mesh_instance = MeshInstance3D.new()
+	attack_ring_mesh_instance.name = "AttackRangeRing"
+	add_child(attack_ring_mesh_instance)
+	attack_ring_mesh_instance.position = Vector3(0, 0.04, 0)
+	_update_attack_ring_mesh()
+
+func _update_attack_ring_mesh() -> void:
+	if not attack_ring_mesh_instance:
+		return
+	var torus := TorusMesh.new()
+	torus.outer_radius = attack_range
+	torus.inner_radius = max(0.1, attack_range - 0.22)
+	torus.rings = 64
+	torus.ring_segments = 8
+	
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.95, 0.2, 0.35, 0.35)
+	mat.emission_enabled = true
+	mat.emission = Color(0.95, 0.2, 0.35)
+	mat.emission_energy_multiplier = 2.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 0.5
+	
+	torus.material = mat
+	attack_ring_mesh_instance.mesh = torus
 
