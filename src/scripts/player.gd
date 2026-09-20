@@ -104,26 +104,15 @@ func _setup_animation_library() -> void:
 
 func _make_animation_in_place(anim: Animation) -> void:
 	for i in range(anim.get_track_count()):
-		var path_str = String(anim.track_get_path(i))
-		if "Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str:
-			var track_type = anim.track_get_type(i)
-			if track_type == Animation.TYPE_POSITION_3D:
+		if anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
+			var path_str = String(anim.track_get_path(i))
+			if "Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str:
 				var key_count = anim.track_get_key_count(i)
 				if key_count > 0:
 					var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
 					for k in range(key_count):
 						var cur: Vector3 = anim.track_get_key_value(i, k)
 						anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
-			elif track_type == Animation.TYPE_ROTATION_3D:
-				var key_count = anim.track_get_key_count(i)
-				if key_count > 0:
-					for k in range(key_count):
-						var q: Quaternion = anim.track_get_key_value(i, k)
-						var euler = q.get_euler()
-						# Keep pitch (x) and roll (z) for natural hip sway/bounce,
-						# but zero out Y-yaw so hips and torso stay facing the target during strafing.
-						var q_no_yaw = Quaternion.from_euler(Vector3(euler.x, 0.0, euler.z))
-						anim.track_set_key_value(i, k, q_no_yaw)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Animation Tree Architecture
@@ -328,18 +317,21 @@ func _physics_process(delta: float) -> void:
 	_update_locomotion(input_dir)
 
 	# 6. Smooth upper-body blend weight & dynamic filtering
+	# If we have a target or are attacking, keep upper body aimed at target!
+	var has_target := (current_target != null and is_instance_valid(current_target))
+	_upper_blend_target = 1.0 if (is_attacking or has_target) else 0.0
+
 	var is_moving := (input_dir != Vector2.ZERO and velocity.length() > 0.3)
 	if anim_tree and anim_tree.tree_root:
 		var body_blend = anim_tree.tree_root.get_node("body_blend") as AnimationNodeBlend2
 		if body_blend:
-			# When moving: filter upper body so legs run while casting.
-			# When stationary: disable filter so full body plays attack (prevents leg dancing).
+			# When moving: filter upper body so legs run/strafe while upper body stays aimed at target.
+			# When stationary: disable filter so full body faces target cleanly (no leg dancing).
 			body_blend.filter_enabled = is_moving
 
 	_upper_blend_current = lerp(_upper_blend_current, _upper_blend_target, delta * 14.0)
 	if anim_tree:
-		var target_blend: float = _upper_blend_current if (is_attacking or _upper_blend_current > 0.01) else 0.0
-		anim_tree.set("parameters/body_blend/blend_amount", target_blend)
+		anim_tree.set("parameters/body_blend/blend_amount", _upper_blend_current)
 
 	# 7. Auto-attack
 	attack_timer += delta
