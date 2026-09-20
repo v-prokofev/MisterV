@@ -5,6 +5,12 @@ extends CharacterBody3D
 @export var attack_cooldown: float = 0.75
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
 
+# Camera Zoom Parameters
+@export var min_fov: float = 30.0
+@export var max_fov: float = 90.0
+@export var zoom_speed: float = 5.0
+var target_fov: float = 70.0
+
 @onready var visuals: Node3D = $Visuals
 @onready var vampire_model: Node3D = $Visuals/VampireModel
 @onready var spell_cast_point: Node3D = $Visuals/SpellCastPoint
@@ -25,6 +31,14 @@ func _ready() -> void:
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Mouse scroll wheel camera zoom
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			target_fov = clamp(target_fov - zoom_speed, min_fov, max_fov)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			target_fov = clamp(target_fov + zoom_speed, min_fov, max_fov)
 
 func _setup_character_texture() -> void:
 	if not vampire_model:
@@ -111,7 +125,6 @@ func _setup_animation_tree() -> void:
 	
 	blend_tree.add_node("locomotion", trans)
 	
-	# Add animation nodes for locomotion
 	var anim_names = ["idle", "run_forward", "run_back", "run_left", "run_right"]
 	for i in range(anim_names.size()):
 		var node_name = "anim_" + anim_names[i]
@@ -120,7 +133,7 @@ func _setup_animation_tree() -> void:
 		blend_tree.add_node(node_name, anim_node)
 		blend_tree.connect_node("locomotion", i, node_name)
 		
-	# 2. Attack Animation & Speed Node
+	# 2. Attack Animation & Speed Node (3.2x speed for complete 0.71s duration within 0.75s cooldown)
 	var attack_node = AnimationNodeAnimation.new()
 	attack_node.animation = "attack"
 	blend_tree.add_node("attack_anim", attack_node)
@@ -131,8 +144,8 @@ func _setup_animation_tree() -> void:
 	
 	# 3. OneShot Upper Body Overlay Node
 	var oneshot = AnimationNodeOneShot.new()
-	oneshot.fadein_time = 0.08
-	oneshot.fadeout_time = 0.12
+	oneshot.fadein_time = 0.05
+	oneshot.fadeout_time = 0.1
 	oneshot.filter_enabled = true
 	
 	var upper_body_paths = [
@@ -167,17 +180,20 @@ func _setup_animation_tree() -> void:
 		
 	blend_tree.add_node("attack_shot", oneshot)
 	
-	# Connect locomotion -> slot 0 (base), attack_speed -> slot 1 (overlay)
 	blend_tree.connect_node("attack_shot", 0, "locomotion")
 	blend_tree.connect_node("attack_shot", 1, "attack_speed")
 	blend_tree.connect_node("output", 0, "attack_shot")
 	
 	anim_tree.tree_root = blend_tree
 	anim_tree.active = true
-	anim_tree.set("parameters/attack_speed/scale", 2.2)
+	anim_tree.set("parameters/attack_speed/scale", 3.2)
 	print("AnimationTree successfully set up for dual-layer blending!")
 
 func _physics_process(delta: float) -> void:
+	# 0. Smooth Camera Zoom FOV
+	if camera:
+		camera.fov = lerp(camera.fov, target_fov, delta * 10.0)
+
 	# 1. Handle Movement Input
 	var input_dir := Vector2.ZERO
 	if Input.is_action_pressed("move_right"):
@@ -231,7 +247,7 @@ func _physics_process(delta: float) -> void:
 	visuals.rotation.z = lerp(visuals.rotation.z, -relative_move_dir.x * 0.12, delta * 10.0)
 	visuals.rotation.x = lerp(visuals.rotation.x, relative_move_dir.y * 0.08, delta * 10.0)
 
-	# 5. Update Locomotion State (Legs ALWAYS run locomotion!)
+	# 5. Update Locomotion State
 	_update_locomotion()
 
 	# 6. Automatic Spell Casting
@@ -263,8 +279,8 @@ func _trigger_spell_cast() -> void:
 	if anim_tree:
 		anim_tree.set("parameters/attack_shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		
-	# Wait for cast gesture completion (fireball detaches right as hand thrusts forward)
-	await get_tree().create_timer(0.24).timeout
+	# Wait for forward hand extension (0.22s at 3.2x speed)
+	await get_tree().create_timer(0.22).timeout
 	
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
