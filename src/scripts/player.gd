@@ -2,8 +2,8 @@ extends CharacterBody3D
 
 @export var move_speed: float = 6.5
 @export var attack_range: float = 25.0
-@export var attack_cooldown: float = 2.4 # Attack every 2.4s
-@export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40 # 0.50 = 50% into attack animation
+@export var attack_cooldown: float = 2.4
+@export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
 
 # Camera Zoom Parameters
@@ -25,8 +25,20 @@ var current_target: Node3D = null
 var attack_timer: float = 0.0
 var current_locomotion_state: String = ""
 
-# Relative movement direction vector (X = right/left strafe, Y = forward/back relative to facing)
 var relative_move_dir: Vector2 = Vector2.ZERO
+
+# Upper-body blend: smoothly fades attack overlay in/out.
+# 0.0 = full locomotion (arms sway with run), 1.0 = upper body from attack SM.
+var _upper_blend_target: float = 0.0
+var _upper_blend_current: float = 0.0
+
+# Lower-body Mixamo bone short-names to EXCLUDE from upper-blend
+# (Blend2 filter: true = excluded from blend → always from locomotion input)
+const LOWER_BODY_BONE_NAMES: Array[String] = [
+	"Hips",
+	"LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase", "LeftToe_End",
+	"RightUpLeg", "RightLeg", "RightFoot", "RightToeBase", "RightToe_End",
+]
 
 func _ready() -> void:
 	add_to_group("player")
@@ -36,7 +48,6 @@ func _ready() -> void:
 	_setup_animation_tree()
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Mouse scroll wheel camera zoom
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			target_fov = clamp(target_fov - zoom_speed, min_fov, max_fov)
@@ -46,10 +57,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _setup_character_texture() -> void:
 	if not vampire_model:
 		return
-		
 	var tex: Texture2D = load("res://assets/player/Meshy_AI__0920153324_texture_obj/Meshy_AI__0920153324_texture.png")
 	var mesh_inst: MeshInstance3D = vampire_model.find_child("Meshy_AI__0920153324_texture", true, false)
-	
 	if mesh_inst and tex:
 		var mat = StandardMaterial3D.new()
 		mat.albedo_texture = tex
@@ -60,39 +69,38 @@ func _setup_character_texture() -> void:
 func _setup_animation_library() -> void:
 	if not vampire_model:
 		return
-		
 	anim_player = vampire_model.find_child("AnimationPlayer", true, false)
 	if not anim_player:
-		print("AnimationPlayer not found in vampire model!")
+		print("AnimationPlayer not found!")
 		return
-		
+
 	var library = anim_player.get_animation_library("")
 	if not library:
 		library = AnimationLibrary.new()
 		anim_player.add_animation_library("", library)
-		
+
 	var anim_paths = {
-		"idle": "res://assets/player/standing idle.fbx",
+		"idle":        "res://assets/player/standing idle.fbx",
 		"run_forward": "res://assets/player/Standing Run Forward.fbx",
-		"run_back": "res://assets/player/Standing Run Back.fbx",
-		"run_left": "res://assets/player/Standing Run Left.fbx",
-		"run_right": "res://assets/player/Standing Run Right.fbx",
-		"attack": "res://assets/player/Standing 1H Magic Attack 01.fbx"
+		"run_back":    "res://assets/player/Standing Run Back.fbx",
+		"run_left":    "res://assets/player/Standing Run Left.fbx",
+		"run_right":   "res://assets/player/Standing Run Right.fbx",
+		"attack":      "res://assets/player/Standing 1H Magic Attack 01.fbx",
 	}
-	
+
 	for anim_name in anim_paths:
-		var path = anim_paths[anim_name]
-		var scene: PackedScene = load(path)
-		if scene:
-			var inst = scene.instantiate()
-			var source_ap: AnimationPlayer = inst.find_child("AnimationPlayer", true, false)
-			if source_ap and source_ap.has_animation("mixamo_com"):
-				var anim = source_ap.get_animation("mixamo_com").duplicate()
-				anim.loop_mode = Animation.LOOP_LINEAR if anim_name != "attack" else Animation.LOOP_NONE
-				_make_animation_in_place(anim)
-				library.add_animation(anim_name, anim)
-				print("Registered animation: ", anim_name)
-			inst.queue_free()
+		var scene: PackedScene = load(anim_paths[anim_name])
+		if not scene:
+			continue
+		var inst = scene.instantiate()
+		var source_ap: AnimationPlayer = inst.find_child("AnimationPlayer", true, false)
+		if source_ap and source_ap.has_animation("mixamo_com"):
+			var anim = source_ap.get_animation("mixamo_com").duplicate()
+			anim.loop_mode = Animation.LOOP_LINEAR if anim_name != "attack" else Animation.LOOP_NONE
+			_make_animation_in_place(anim)
+			library.add_animation(anim_name, anim)
+			print("Registered animation: ", anim_name)
+		inst.queue_free()
 
 func _make_animation_in_place(anim: Animation) -> void:
 	for i in range(anim.get_track_count()):
@@ -103,79 +111,183 @@ func _make_animation_in_place(anim: Animation) -> void:
 				if key_count > 0:
 					var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
 					for k in range(key_count):
-						var current_pos: Vector3 = anim.track_get_key_value(i, k)
-						var in_place_pos = Vector3(initial_pos.x, current_pos.y, initial_pos.z)
-						anim.track_set_key_value(i, k, in_place_pos)
+						var cur: Vector3 = anim.track_get_key_value(i, k)
+						anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Animation Tree Architecture
+#
+#  BlendTree (root)
+#  ├─ locomotion_sm  StateMachine (idle / run_*)         → full body base
+#  ├─ upper_sm       StateMachine (idle_upper / attack)  → upper body override
+#  └─ body_blend     AnimationNodeBlend2
+#       blend_amount = 0.0  → everything from locomotion_sm (arms sway with run)
+#       blend_amount = 1.0  → lower body filtered (from locomotion_sm),
+#                              upper body from upper_sm (attack plays)
+#
+# Filter on body_blend: LOWER body bone tracks are excluded (true = excluded).
+# Excluded tracks always take from input 0 (locomotion). Upper body not excluded
+# → upper body blends to input 1 (upper_sm) when blend_amount → 1.0.
+# ─────────────────────────────────────────────────────────────────────────────
 func _setup_animation_tree() -> void:
 	if not vampire_model or not anim_player:
 		return
-		
+
 	anim_tree = AnimationTree.new()
 	vampire_model.add_child(anim_tree)
 	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
-	
-	# Simple StateMachine: idle, run_forward, run_back, run_left, run_right, attack
-	var state_machine = AnimationNodeStateMachine.new()
-	
-	var all_anims = ["idle", "run_forward", "run_back", "run_left", "run_right", "attack"]
-	for anim_name in all_anims:
-		var node = AnimationNodeAnimation.new()
-		node.animation = anim_name
-		state_machine.add_node(anim_name, node)
-	
-	# Connect all states to each other (any -> any transitions)
-	for from_state in all_anims:
-		for to_state in all_anims:
-			if from_state != to_state:
-				var trans = AnimationNodeStateMachineTransition.new()
-				trans.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
-				trans.xfade_time = 0.15
-				state_machine.add_transition(from_state, to_state, trans)
-	
-	# In Godot 4, set start by transitioning from built-in "Start" node
-	var start_trans = AnimationNodeStateMachineTransition.new()
-	start_trans.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
-	start_trans.xfade_time = 0.0
-	state_machine.add_transition("Start", "idle", start_trans)
-	
-	anim_tree.tree_root = state_machine
+
+	var blend_tree := AnimationNodeBlendTree.new()
+
+	# ── Locomotion State Machine (legs / full body base) ──────────────────────
+	var loco_sm := AnimationNodeStateMachine.new()
+	var loco_anims := ["idle", "run_forward", "run_back", "run_left", "run_right"]
+	for name in loco_anims:
+		var node := AnimationNodeAnimation.new()
+		node.animation = name
+		loco_sm.add_node(name, node)
+	for from_s in loco_anims:
+		for to_s in loco_anims:
+			if from_s == to_s:
+				continue
+			var t := AnimationNodeStateMachineTransition.new()
+			t.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+			t.xfade_time = 0.15
+			loco_sm.add_transition(from_s, to_s, t)
+	var ls := AnimationNodeStateMachineTransition.new()
+	ls.xfade_time = 0.0
+	loco_sm.add_transition("Start", "idle", ls)
+
+	# ── Upper Body State Machine (idle pose or attack) ────────────────────────
+	# idle_upper: plays "idle" so upper body stays neutral when not attacking.
+	# attack:     plays the actual attack animation.
+	# When blend_amount = 0, this whole SM is invisible (full locomotion body).
+	var upper_sm := AnimationNodeStateMachine.new()
+
+	var idle_upper_node := AnimationNodeAnimation.new()
+	idle_upper_node.animation = "idle"
+	upper_sm.add_node("idle_upper", idle_upper_node)
+
+	var attack_node := AnimationNodeAnimation.new()
+	attack_node.animation = "attack"
+	upper_sm.add_node("attack", attack_node)
+
+	# idle_upper → attack: immediate
+	var t_to_atk := AnimationNodeStateMachineTransition.new()
+	t_to_atk.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+	t_to_atk.xfade_time = 0.05
+	upper_sm.add_transition("idle_upper", "attack", t_to_atk)
+
+	# attack → idle_upper: after attack finishes (AT_END) with blend
+	var t_to_idle := AnimationNodeStateMachineTransition.new()
+	t_to_idle.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_AT_END
+	t_to_idle.xfade_time = 0.25
+	upper_sm.add_transition("attack", "idle_upper", t_to_idle)
+
+	var us := AnimationNodeStateMachineTransition.new()
+	us.xfade_time = 0.0
+	upper_sm.add_transition("Start", "idle_upper", us)
+
+	# ── Blend2: overlays upper_sm on top of locomotion_sm ────────────────────
+	var body_blend := AnimationNodeBlend2.new()
+	body_blend.filter_enabled = true
+
+	# Add all nodes to the tree
+	blend_tree.add_node("locomotion_sm", loco_sm, Vector2(50,  200))
+	blend_tree.add_node("upper_sm",      upper_sm, Vector2(50,  450))
+	blend_tree.add_node("body_blend",    body_blend, Vector2(400, 320))
+
+	# Wire: locomotion_sm → body_blend[0] (base / full body)
+	blend_tree.connect_node("body_blend", 0, "locomotion_sm")
+	# Wire: upper_sm → body_blend[1] (upper body override layer)
+	blend_tree.connect_node("body_blend", 1, "upper_sm")
+	# Wire: body_blend → output
+	blend_tree.connect_node("output", 0, "body_blend")
+
+	anim_tree.tree_root = blend_tree
 	anim_tree.active = true
-	print("AnimationTree (StateMachine, full-body) set up successfully")
+
+	# Apply filter after one frame so AnimationTree has fully initialised
+	call_deferred("_apply_lower_body_filter")
+	print("AnimationTree (BlendTree, dual-SM) set up successfully")
+
+func _apply_lower_body_filter() -> void:
+	if not anim_tree or not anim_tree.tree_root:
+		return
+
+	var body_blend: AnimationNodeBlend2 = anim_tree.tree_root.get_node("body_blend") as AnimationNodeBlend2
+	if not body_blend:
+		print("WARNING: body_blend node not found")
+		return
+
+	# Build lookup set for lower-body bone short-names
+	var lower_set: Dictionary = {}
+	for bname in LOWER_BODY_BONE_NAMES:
+		lower_set[bname] = true
+
+	# Use ACTUAL track paths from the attack animation.
+	# This guarantees the filter path format matches exactly what AnimationTree
+	# uses internally (e.g. "Armature/Skeleton3D:mixamorig:Hips").
+	if not anim_player.has_animation("attack"):
+		print("WARNING: 'attack' animation missing — filter not applied")
+		return
+
+	var atk_anim: Animation = anim_player.get_animation("attack")
+	var filtered := 0
+	var total := atk_anim.get_track_count()
+
+	# Debug: show first few track paths so we can verify format in output log
+	print("--- All Track Paths & Filter Status ---")
+	for i in range(total):
+		var track_path: NodePath = atk_anim.track_get_path(i)
+		var path_str: String = String(track_path)
+
+		var bone_short: String = path_str
+		var colon_idx: int = path_str.rfind(":")
+		if colon_idx >= 0:
+			bone_short = path_str.substr(colon_idx + 1)
+
+		var clean_bone: String = bone_short.trim_prefix("mixamorig_").trim_prefix("mixamorig:")
+
+		var is_lower: bool = lower_set.has(clean_bone)
+		var is_upper: bool = not is_lower
+
+		# Filter path = true means THIS track gets blended from Input 1 (upper_sm / attack).
+		# Filter path = false means THIS track stays on Input 0 (locomotion_sm / legs).
+		body_blend.set_filter_path(track_path, is_upper)
+		if is_upper:
+			filtered += 1
+		print("  [%s] %s (clean: %s) -> BLEND_UPPER=%s" % [i, path_str, clean_bone, is_upper])
+	print("------------------------------------------")
+
+	print("Upper-body filter applied: %d tracks assigned to upper blend out of %d total" % [filtered, total])
 
 func _physics_process(delta: float) -> void:
-	# 0. Smooth Camera Zoom FOV
+	# 0. Camera zoom
 	if camera:
 		camera.fov = lerp(camera.fov, target_fov, delta * 10.0)
 
-	# 1. Handle Movement Input
+	# 1. Movement input
 	var input_dir := Vector2.ZERO
-	if Input.is_action_pressed("move_right"):
-		input_dir.x += 1.0
-	if Input.is_action_pressed("move_left"):
-		input_dir.x -= 1.0
-	if Input.is_action_pressed("move_backward"):
-		input_dir.y += 1.0
-	if Input.is_action_pressed("move_forward"):
-		input_dir.y -= 1.0
-		
+	if Input.is_action_pressed("move_right"):    input_dir.x += 1.0
+	if Input.is_action_pressed("move_left"):     input_dir.x -= 1.0
+	if Input.is_action_pressed("move_backward"): input_dir.y += 1.0
+	if Input.is_action_pressed("move_forward"):  input_dir.y -= 1.0
 	input_dir = input_dir.normalized()
-	
+
 	var move_direction := Vector3(input_dir.x, 0, input_dir.y).normalized()
-	
 	if move_direction != Vector3.ZERO:
 		velocity.x = move_direction.x * move_speed
 		velocity.z = move_direction.z * move_speed
 	else:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
-		
 	move_and_slide()
-	
-	# 2. Acquire Target Dummy
+
+	# 2. Target
 	current_target = _find_nearest_target()
-	
-	# 3. Handle Facing Direction
+
+	# 3. Facing
 	var facing_dir := Vector3.ZERO
 	if current_target and is_instance_valid(current_target):
 		facing_dir = (current_target.global_position - global_position)
@@ -183,40 +295,52 @@ func _physics_process(delta: float) -> void:
 		facing_dir = facing_dir.normalized()
 	elif move_direction != Vector3.ZERO:
 		facing_dir = move_direction
-		
+
 	if facing_dir != Vector3.ZERO:
-		var target_rotation_y = atan2(-facing_dir.x, -facing_dir.z)
-		visuals.rotation.y = lerp_angle(visuals.rotation.y, target_rotation_y, delta * 12.0)
-		
-	# 4. Calculate Strafe Vectors
+		var target_rot_y = atan2(-facing_dir.x, -facing_dir.z)
+		visuals.rotation.y = lerp_angle(visuals.rotation.y, target_rot_y, delta * 12.0)
+
+	# 4. Strafe vectors
 	if move_direction != Vector3.ZERO and facing_dir != Vector3.ZERO:
-		var char_forward = -visuals.global_transform.basis.z
-		var char_right = visuals.global_transform.basis.x
-		relative_move_dir.y = move_direction.dot(char_forward)
-		relative_move_dir.x = move_direction.dot(char_right)
+		var fwd = -visuals.global_transform.basis.z
+		var rgt =  visuals.global_transform.basis.x
+		relative_move_dir.y = move_direction.dot(fwd)
+		relative_move_dir.x = move_direction.dot(rgt)
 	else:
 		relative_move_dir = Vector2.ZERO
 
-	# Subtle procedural lean
+	# Lean
 	visuals.rotation.z = lerp(visuals.rotation.z, -relative_move_dir.x * 0.12, delta * 10.0)
 	visuals.rotation.x = lerp(visuals.rotation.x, relative_move_dir.y * 0.08, delta * 10.0)
 
-	# 5. Update Locomotion State
-	_update_locomotion()
+	# 5. Locomotion SM — runs ALWAYS, even during attack
+	_update_locomotion(input_dir)
 
-	# 6. Automatic Spell Casting
+	# 6. Smooth upper-body blend weight & dynamic filtering
+	var is_moving := (input_dir != Vector2.ZERO and velocity.length() > 0.3)
+	if anim_tree and anim_tree.tree_root:
+		var body_blend = anim_tree.tree_root.get_node("body_blend") as AnimationNodeBlend2
+		if body_blend:
+			# When moving: filter upper body so legs run while casting.
+			# When stationary: disable filter so full body plays attack (prevents leg dancing).
+			body_blend.filter_enabled = is_moving
+
+	_upper_blend_current = lerp(_upper_blend_current, _upper_blend_target, delta * 14.0)
+	if anim_tree:
+		var target_blend: float = _upper_blend_current if (is_attacking or _upper_blend_current > 0.01) else 0.0
+		anim_tree.set("parameters/body_blend/blend_amount", target_blend)
+
+	# 7. Auto-attack
 	attack_timer += delta
 	if current_target and is_instance_valid(current_target) and attack_timer >= attack_cooldown:
 		attack_timer = 0.0
 		_trigger_spell_cast()
 
-func _update_locomotion() -> void:
-	if not anim_tree or is_attacking:
+func _update_locomotion(input_dir: Vector2) -> void:
+	if not anim_tree:
 		return
-		
 	var target_state = "idle"
-	
-	if velocity.length() > 0.2:
+	if input_dir != Vector2.ZERO and velocity.length() > 0.3:
 		if abs(relative_move_dir.x) > abs(relative_move_dir.y):
 			target_state = "run_right" if relative_move_dir.x > 0 else "run_left"
 		else:
@@ -224,7 +348,7 @@ func _update_locomotion() -> void:
 
 	if current_locomotion_state != target_state:
 		current_locomotion_state = target_state
-		var playback = anim_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
+		var playback = anim_tree.get("parameters/locomotion_sm/playback") as AnimationNodeStateMachinePlayback
 		if playback:
 			playback.travel(target_state)
 
@@ -233,50 +357,49 @@ func _trigger_spell_cast() -> void:
 		return
 	if is_attacking:
 		return
-		
+
 	is_attacking = true
-	current_locomotion_state = ""
-	
-	if anim_tree:
-		var playback = anim_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
-		if playback:
-			playback.travel("attack")
-		
-	# Get actual animation duration to wait the right amount
-	var attack_duration: float = 2.3  # fallback
+
+	# Start attack in upper-body SM
+	var upper_pb = anim_tree.get("parameters/upper_sm/playback") as AnimationNodeStateMachinePlayback
+	if upper_pb:
+		upper_pb.start("attack")
+
+	# Fade upper body IN
+	_upper_blend_target = 1.0
+
+	var attack_duration: float = 2.3
 	if anim_player and anim_player.has_animation("attack"):
 		attack_duration = anim_player.get_animation("attack").length
-	
-	# Spawn fireball at configured ratio of animation duration
-	var cast_ratio = clamp(attack_cast_point_ratio, 0.0, 1.0)
-	var cast_time = attack_duration * cast_ratio
+
+	var cast_time     = attack_duration * clamp(attack_cast_point_ratio, 0.0, 1.0)
 	var recovery_time = max(0.0, attack_duration - cast_time)
-	
+
 	await get_tree().create_timer(cast_time).timeout
 	if is_instance_valid(current_target):
 		_spawn_magic_sphere()
-	
-	# Wait for remainder of animation to complete
+
 	await get_tree().create_timer(recovery_time).timeout
-	
+
+	# Return upper-body SM to idle pose
+	if anim_tree:
+		var upper_pb2 = anim_tree.get("parameters/upper_sm/playback") as AnimationNodeStateMachinePlayback
+		if upper_pb2:
+			upper_pb2.travel("idle_upper")
+
+	# Fade upper body OUT (arms go back to following locomotion)
+	_upper_blend_target = 0.0
 	is_attacking = false
-	current_locomotion_state = ""
-	# Return to locomotion
-	_update_locomotion()
 
 func _spawn_magic_sphere() -> void:
 	if not magic_sphere_scene or not current_target:
 		return
-		
 	var sphere = magic_sphere_scene.instantiate()
 	get_parent().add_child(sphere)
-	
 	var spawn_pos = spell_cast_point.global_position if spell_cast_point else global_position + Vector3(0, 1.2, 0)
 	sphere.global_position = spawn_pos
-	
 	var target_center = current_target.global_position + Vector3(0, 1.0, 0)
 	var shoot_dir = (target_center - spawn_pos).normalized()
-	
 	if sphere.has_method("set_target_direction"):
 		sphere.set_target_direction(shoot_dir)
 
@@ -284,7 +407,6 @@ func _find_nearest_target() -> Node3D:
 	var dummies = get_tree().get_nodes_in_group("dummies")
 	var nearest: Node3D = null
 	var min_dist: float = attack_range
-	
 	for dummy in dummies:
 		if not is_instance_valid(dummy):
 			continue
@@ -292,5 +414,4 @@ func _find_nearest_target() -> Node3D:
 		if dist < min_dist:
 			min_dist = dist
 			nearest = dummy
-			
 	return nearest
