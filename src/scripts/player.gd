@@ -484,14 +484,14 @@ func _setup_player_health_ui() -> void:
 	var bar_script = preload("res://scripts/floating_health_bar.gd")
 	health_bar_3d = bar_script.new()
 	add_child(health_bar_3d)
-	health_bar_3d.setup(max_health, "Vampire Mage", Color(0.15, 0.85, 0.35), 2.2)
+	health_bar_3d.setup(max_health, "", Color(0.15, 0.85, 0.35), 2.2)
 
 	hud_canvas = CanvasLayer.new()
 	add_child(hud_canvas)
 	
 	var margin = MarginContainer.new()
 	margin.position = Vector2(20, 20)
-	margin.custom_minimum_size = Vector2(280, 70)
+	margin.custom_minimum_size = Vector2(240, 60)
 	hud_canvas.add_child(margin)
 	
 	var panel = Panel.new()
@@ -507,16 +507,8 @@ func _setup_player_health_ui() -> void:
 	bg_panel.border_width_bottom = 2
 	bg_panel.border_color = Color(0.25, 0.55, 0.95, 0.9)
 	panel.add_theme_stylebox_override("panel", bg_panel)
-	panel.custom_minimum_size = Vector2(280, 70)
+	panel.custom_minimum_size = Vector2(240, 60)
 	margin.add_child(panel)
-	
-	var title_lbl = Label.new()
-	title_lbl.position = Vector2(14, 6)
-	title_lbl.size = Vector2(252, 20)
-	title_lbl.text = "🧙‍♂️ Багровый Чародей (Vampire Mage)"
-	title_lbl.add_theme_font_size_override("font_size", 13)
-	title_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
-	panel.add_child(title_lbl)
 	
 	var fill_style = StyleBoxFlat.new()
 	fill_style.bg_color = Color(0.15, 0.85, 0.35)
@@ -533,8 +525,8 @@ func _setup_player_health_ui() -> void:
 	back_style.corner_radius_bottom_right = 5
 	
 	hud_progress_bar = ProgressBar.new()
-	hud_progress_bar.position = Vector2(14, 30)
-	hud_progress_bar.size = Vector2(252, 28)
+	hud_progress_bar.position = Vector2(10, 8)
+	hud_progress_bar.size = Vector2(220, 44)
 	hud_progress_bar.show_percentage = false
 	hud_progress_bar.add_theme_stylebox_override("background", back_style)
 	hud_progress_bar.add_theme_stylebox_override("fill", fill_style)
@@ -543,14 +535,15 @@ func _setup_player_health_ui() -> void:
 	panel.add_child(hud_progress_bar)
 	
 	hud_hp_label = Label.new()
-	hud_hp_label.position = Vector2(14, 34)
-	hud_hp_label.size = Vector2(252, 20)
-	hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+	hud_hp_label.position = Vector2(10, 8)
+	hud_hp_label.size = Vector2(220, 44)
+	hud_hp_label.text = "%d" % int(ceil(current_health))
 	hud_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hud_hp_label.add_theme_font_size_override("font_size", 14)
+	hud_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hud_hp_label.add_theme_font_size_override("font_size", 26)
 	hud_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 	hud_hp_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	hud_hp_label.add_theme_constant_override("outline_size", 4)
+	hud_hp_label.add_theme_constant_override("outline_size", 6)
 	panel.add_child(hud_hp_label)
 
 func take_damage(amount: float) -> void:
@@ -564,7 +557,7 @@ func take_damage(amount: float) -> void:
 	if hud_progress_bar:
 		hud_progress_bar.value = current_health
 	if hud_hp_label:
-		hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+		hud_hp_label.text = "%d" % int(ceil(current_health))
 		
 	_flash_player_hit()
 	
@@ -602,6 +595,6 @@ func _on_player_die() -> void:
 	if hud_progress_bar:
 		hud_progress_bar.value = current_health
 	if hud_hp_label:
-		hud_hp_label.text = "HP: %d / %d" % [int(ceil(current_health)), int(ceil(max_health))]
+		hud_hp_label.text = "%d" % int(ceil(current_health))
 	print("PLAYER HAS HEALED TO FULL HP!")
 
