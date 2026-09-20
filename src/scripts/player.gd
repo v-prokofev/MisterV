@@ -20,6 +20,7 @@ var target_fov: float = 70.0
 var anim_player: AnimationPlayer = null
 var anim_tree: AnimationTree = null
 var is_attacking: bool = false
+var is_moving: bool = false
 
 var current_target: Node3D = null
 var attack_timer: float = 0.0
@@ -46,6 +47,7 @@ func _ready() -> void:
 	_setup_character_texture()
 	_setup_animation_library()
 	_setup_animation_tree()
+	_setup_skeleton_modifier()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -99,6 +101,14 @@ func _setup_animation_library() -> void:
 			anim.loop_mode = Animation.LOOP_LINEAR if anim_name != "attack" else Animation.LOOP_NONE
 			_make_animation_in_place(anim)
 			library.add_animation(anim_name, anim)
+			
+			# Print Hips initial Y rotation for diagnosis
+			for t in range(anim.get_track_count()):
+				if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and "Hips" in String(anim.track_get_path(t)):
+					if anim.track_get_key_count(t) > 0:
+						var q: Quaternion = anim.track_get_key_value(t, 0)
+						var deg_y = rad_to_deg(q.get_euler().y)
+						print("Anim '%s' Hips Y-rotation = %.1f deg" % [anim_name, deg_y])
 			print("Registered animation: ", anim_name)
 		inst.queue_free()
 
@@ -249,15 +259,18 @@ func _apply_lower_body_filter() -> void:
 
 		var clean_bone: String = bone_short.trim_prefix("mixamorig_").trim_prefix("mixamorig:")
 
-		var is_lower: bool = lower_set.has(clean_bone)
-		var is_upper: bool = not is_lower
+		var track_type = atk_anim.track_get_type(i)
+		var is_upper: bool = false
 
-		# Filter path = true means THIS track gets blended from Input 1 (upper_sm / attack).
-		# Filter path = false means THIS track stays on Input 0 (locomotion_sm / legs).
+		if lower_set.has(clean_bone):
+			is_upper = false     # Hips and legs come from locomotion
+		else:
+			is_upper = true      # Torso (Spine), shoulders, arms, head come from upper_sm
+
 		body_blend.set_filter_path(track_path, is_upper)
 		if is_upper:
 			filtered += 1
-		print("  [%s] %s (clean: %s) -> BLEND_UPPER=%s" % [i, path_str, clean_bone, is_upper])
+		print("  [%s] %s (clean: %s, type: %s) -> BLEND_UPPER=%s" % [i, path_str, clean_bone, track_type, is_upper])
 	print("------------------------------------------")
 
 	print("Upper-body filter applied: %d tracks assigned to upper blend out of %d total" % [filtered, total])
@@ -321,7 +334,7 @@ func _physics_process(delta: float) -> void:
 	var has_target := (current_target != null and is_instance_valid(current_target))
 	_upper_blend_target = 1.0 if (is_attacking or has_target) else 0.0
 
-	var is_moving := (input_dir != Vector2.ZERO and velocity.length() > 0.3)
+	is_moving = (input_dir != Vector2.ZERO and velocity.length() > 0.3)
 	if anim_tree and anim_tree.tree_root:
 		var body_blend = anim_tree.tree_root.get_node("body_blend") as AnimationNodeBlend2
 		if body_blend:
@@ -420,3 +433,43 @@ func _find_nearest_target() -> Node3D:
 			min_dist = dist
 			nearest = dummy
 	return nearest
+
+func _setup_skeleton_modifier() -> void:
+	if not vampire_model:
+		return
+	var skel: Skeleton3D = vampire_model.find_child("Skeleton3D", true, false) as Skeleton3D
+	if not skel:
+		print("Skeleton3D not found for modifier")
+		return
+	var modifier := TorsoAimModifier.new()
+	modifier.player = self
+	skel.add_child(modifier)
+	modifier.active = true
+	print("TorsoAimModifier attached to Skeleton3D successfully")
+
+class TorsoAimModifier extends SkeletonModifier3D:
+	var player: CharacterBody3D = null
+	var idle_hips_y: float = deg_to_rad(-58.2)
+
+	func _process_modification() -> void:
+		var skel := get_skeleton()
+		if not skel or not player:
+			return
+
+		var has_target := (player.current_target != null and is_instance_valid(player.current_target))
+		if not (player.is_moving and has_target):
+			return
+
+		var hips_idx := skel.find_bone("mixamorig_Hips")
+		var spine_idx := skel.find_bone("mixamorig_Spine")
+		if hips_idx < 0 or spine_idx < 0:
+			return
+
+		var hips_rot := skel.get_bone_pose_rotation(hips_idx)
+		var hips_y := hips_rot.get_euler().y
+		var delta_y := hips_y - idle_hips_y
+
+		var spine_rot := skel.get_bone_pose_rotation(spine_idx)
+		var correction := Quaternion(Vector3.UP, -delta_y)
+		skel.set_bone_pose_rotation(spine_idx, spine_rot * correction)
+
