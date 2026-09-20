@@ -484,30 +484,29 @@ func _setup_player_health_ui() -> void:
 	var bar_script = preload("res://scripts/floating_health_bar.gd")
 	health_bar_3d = bar_script.new()
 	add_child(health_bar_3d)
-	health_bar_3d.setup(max_health, "", Color(0.15, 0.85, 0.35), 2.2)
+	health_bar_3d.setup(max_health, "", Color(0.15, 0.85, 0.35), 2.2, true)
 
 	hud_canvas = CanvasLayer.new()
 	add_child(hud_canvas)
 	
 	var margin = MarginContainer.new()
 	margin.position = Vector2(20, 20)
-	margin.custom_minimum_size = Vector2(240, 60)
+	margin.custom_minimum_size = Vector2(280, 80)
 	hud_canvas.add_child(margin)
 	
 	var panel = Panel.new()
 	var bg_panel = StyleBoxFlat.new()
-	bg_panel.bg_color = Color(0.08, 0.09, 0.14, 0.85)
-	bg_panel.corner_radius_top_left = 8
-	bg_panel.corner_radius_top_right = 8
-	bg_panel.corner_radius_bottom_left = 8
-	bg_panel.corner_radius_bottom_right = 8
-	bg_panel.border_width_left = 2
-	bg_panel.border_width_top = 2
-	bg_panel.border_width_right = 2
-	bg_panel.border_width_bottom = 2
-	bg_panel.border_color = Color(0.25, 0.55, 0.95, 0.9)
+	bg_panel.bg_color = Color(0.06, 0.07, 0.1, 0.85)
+	bg_panel.corner_radius_top_left = 6
+	bg_panel.corner_radius_top_right = 6
+	bg_panel.corner_radius_bottom_left = 6
+	bg_panel.corner_radius_bottom_right = 6
+	bg_panel.border_width_left = 0
+	bg_panel.border_width_top = 0
+	bg_panel.border_width_right = 0
+	bg_panel.border_width_bottom = 0
 	panel.add_theme_stylebox_override("panel", bg_panel)
-	panel.custom_minimum_size = Vector2(240, 60)
+	panel.custom_minimum_size = Vector2(280, 80)
 	margin.add_child(panel)
 	
 	var fill_style = StyleBoxFlat.new()
@@ -516,17 +515,25 @@ func _setup_player_health_ui() -> void:
 	fill_style.corner_radius_top_right = 5
 	fill_style.corner_radius_bottom_left = 5
 	fill_style.corner_radius_bottom_right = 5
+	fill_style.border_width_left = 0
+	fill_style.border_width_top = 0
+	fill_style.border_width_right = 0
+	fill_style.border_width_bottom = 0
 	
 	var back_style = StyleBoxFlat.new()
-	back_style.bg_color = Color(0.15, 0.18, 0.22, 0.9)
+	back_style.bg_color = Color(0.12, 0.14, 0.18, 0.9)
 	back_style.corner_radius_top_left = 5
 	back_style.corner_radius_top_right = 5
 	back_style.corner_radius_bottom_left = 5
 	back_style.corner_radius_bottom_right = 5
+	back_style.border_width_left = 0
+	back_style.border_width_top = 0
+	back_style.border_width_right = 0
+	back_style.border_width_bottom = 0
 	
 	hud_progress_bar = ProgressBar.new()
-	hud_progress_bar.position = Vector2(10, 8)
-	hud_progress_bar.size = Vector2(220, 44)
+	hud_progress_bar.position = Vector2(6, 6)
+	hud_progress_bar.size = Vector2(268, 68)
 	hud_progress_bar.show_percentage = false
 	hud_progress_bar.add_theme_stylebox_override("background", back_style)
 	hud_progress_bar.add_theme_stylebox_override("fill", fill_style)
@@ -535,15 +542,15 @@ func _setup_player_health_ui() -> void:
 	panel.add_child(hud_progress_bar)
 	
 	hud_hp_label = Label.new()
-	hud_hp_label.position = Vector2(10, 8)
-	hud_hp_label.size = Vector2(220, 44)
+	hud_hp_label.position = Vector2(6, 6)
+	hud_hp_label.size = Vector2(268, 68)
 	hud_hp_label.text = "%d" % int(ceil(current_health))
 	hud_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hud_hp_label.add_theme_font_size_override("font_size", 26)
-	hud_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
-	hud_hp_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	hud_hp_label.add_theme_constant_override("outline_size", 6)
+	hud_hp_label.add_theme_font_size_override("font_size", 42)
+	hud_hp_label.add_theme_color_override("font_color", Color(0.06, 0.12, 0.08))
+	hud_hp_label.add_theme_color_override("font_outline_color", Color(0.85, 1.0, 0.88))
+	hud_hp_label.add_theme_constant_override("outline_size", 4)
 	panel.add_child(hud_hp_label)
 
 func take_damage(amount: float) -> void:
