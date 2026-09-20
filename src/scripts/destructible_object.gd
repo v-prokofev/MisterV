@@ -78,9 +78,38 @@ func _respawn_object() -> void:
 	visible = true
 	collision_shape.set_deferred("disabled", false)
 	
-	# Spawn respawn particle flash
+	# Spawn respawn particle flash & bright birth animation
 	_create_particle_burst()
+	_animate_respawn_glow()
 	print("Destructible ", name, " HAS RESPAWNED!")
+
+func _animate_respawn_glow() -> void:
+	if not mesh_instance:
+		return
+		
+	var respawn_mat = StandardMaterial3D.new()
+	respawn_mat.roughness = 0.2
+	respawn_mat.metallic = 0.3
+	respawn_mat.emission_enabled = true
+	
+	# Born super bright white with high emission energy
+	respawn_mat.albedo_color = Color(1.0, 1.0, 1.0)
+	respawn_mat.emission = Color(1.0, 1.0, 1.0)
+	respawn_mat.emission_energy_multiplier = 8.0
+	
+	mesh_instance.set_surface_override_material(0, respawn_mat)
+	mesh_instance.scale = Vector3(0.2, 0.2, 0.2)
+	
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(respawn_mat, "albedo_color", object_color, 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(respawn_mat, "emission", object_color, 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(respawn_mat, "emission_energy_multiplier", 1.5, 1.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(mesh_instance, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	await tween.finished
+	if is_instance_valid(mesh_instance) and not is_destroyed:
+		mesh_instance.scale = Vector3.ONE
+		mesh_instance.set_surface_override_material(0, original_material)
 
 func _create_shatter_debris() -> void:
 	var num_chunks = 8
