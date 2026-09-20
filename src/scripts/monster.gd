@@ -36,7 +36,16 @@ func _setup_model_and_animations() -> void:
 		return
 		
 	var model_loaded = false
-	if ResourceLoader.exists("res://assets/monsters/MakraRig.fbx"):
+	if ResourceLoader.exists("res://assets/monsters/meshy_mob.glb"):
+		var model_scene: PackedScene = load("res://assets/monsters/meshy_mob.glb")
+		if model_scene:
+			monster_model_inst = model_scene.instantiate()
+			visuals.add_child(monster_model_inst)
+			monster_model_inst.scale = Vector3(1.0, 1.0, 1.0)
+			anim_player = monster_model_inst.find_child("AnimationPlayer", true, false)
+			model_loaded = true
+			print("Loaded meshy_mob.glb successfully!")
+	elif ResourceLoader.exists("res://assets/monsters/MakraRig.fbx"):
 		var model_scene: PackedScene = load("res://assets/monsters/MakraRig.fbx")
 		if model_scene:
 			monster_model_inst = model_scene.instantiate()
@@ -72,37 +81,12 @@ func _setup_model_and_animations() -> void:
 		body_mesh_inst.material_override = original_material
 		monster_model_inst.add_child(body_mesh_inst)
 	
-	# Setup AnimationPlayer
-	anim_player = AnimationPlayer.new()
-	anim_player.name = "MonsterAnimPlayer"
-	add_child(anim_player)
+	if not anim_player:
+		anim_player = AnimationPlayer.new()
+		anim_player.name = "MonsterAnimPlayer"
+		add_child(anim_player)
 	
-	var lib = AnimationLibrary.new()
-	anim_player.add_animation_library("", lib)
-	
-	var anim_paths = {
-		"idle":   "res://assets/monsters/Makra_Anim Aidl.fbx",
-		"walk":   "res://assets/monsters/Makra_Anim Walk.fbx",
-		"attack": "res://assets/monsters/Makra_Anim Attack.fbx"
-	}
-	
-	for anim_name in anim_paths:
-		if not ResourceLoader.exists(anim_paths[anim_name]):
-			continue
-		var scene: PackedScene = load(anim_paths[anim_name])
-		if not scene:
-			continue
-		var inst = scene.instantiate()
-		var source_ap: AnimationPlayer = inst.find_child("AnimationPlayer", true, false)
-		if source_ap and source_ap.has_animation("mixamo_com"):
-			var anim = source_ap.get_animation("mixamo_com").duplicate()
-			if anim_name != "attack":
-				anim.loop_mode = Animation.LOOP_LINEAR
-			lib.add_animation(anim_name, anim)
-		inst.queue_free()
-	
-	if anim_player.has_animation("idle"):
-		anim_player.play("idle")
+	_play_anim("idle")
 
 func _setup_health_bar() -> void:
 	var bar_script = preload("res://scripts/floating_health_bar.gd")
@@ -165,9 +149,27 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 func _play_anim(anim_name: String) -> void:
-	if anim_player and anim_player.has_animation(anim_name):
-		if anim_player.current_animation != anim_name:
-			anim_player.play(anim_name)
+	if not anim_player:
+		return
+		
+	var candidates = []
+	match anim_name:
+		"idle":
+			candidates = ["Idle_5", "idle", "Standing Idle"]
+		"walk", "run":
+			candidates = ["Running", "Walking", "walk"]
+		"attack":
+			candidates = ["Right_Hand_Sword_Slash", "attack"]
+		"death":
+			candidates = ["dying_backwards", "death"]
+		_:
+			candidates = [anim_name]
+			
+	for target in candidates:
+		if anim_player.has_animation(target):
+			if anim_player.current_animation != target:
+				anim_player.play(target)
+			break
 
 func _perform_attack(target_player: Node3D) -> void:
 	is_attacking = true
