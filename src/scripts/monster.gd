@@ -45,6 +45,7 @@ func _setup_model_and_animations() -> void:
 				visuals.add_child(monster_model_inst)
 			
 	if monster_model_inst:
+		monster_model_inst.rotation.y = PI
 		anim_player = monster_model_inst.find_child("AnimationPlayer", true, false)
 	
 	if not anim_player:

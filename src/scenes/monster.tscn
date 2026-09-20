@@ -19,3 +19,4 @@ shape = SubResource("CapsuleShape3D_monster")
 [node name="Visuals" type="Node3D" parent="."]
 
 [node name="MeshyModel" parent="Visuals" instance=ExtResource("2_mob_model")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
