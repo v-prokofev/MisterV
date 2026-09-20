@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @export var move_speed: float = 6.5
-@export var attack_range: float = 11.0
+@export var attack_range: float = 3.7
 @export var attack_cooldown: float = 2.4
 @export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
@@ -453,7 +453,7 @@ func _update_attack_ring_mesh() -> void:
 		return
 	var torus := TorusMesh.new()
 	torus.outer_radius = attack_range
-	torus.inner_radius = max(0.1, attack_range - 0.22)
+	torus.inner_radius = max(0.1, attack_range - 0.15)
 	torus.rings = 64
 	torus.ring_segments = 8
 	
