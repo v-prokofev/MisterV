@@ -36,11 +36,13 @@ func _setup_model_and_animations() -> void:
 		return
 		
 	monster_model_inst = visuals.find_child("MeshyModel", true, false)
-	if not monster_model_inst and ResourceLoader.exists("res://assets/monsters/meshy_mob.glb"):
-		var model_scene = load("res://assets/monsters/meshy_mob.glb") as PackedScene
-		if model_scene:
-			monster_model_inst = model_scene.instantiate()
-			visuals.add_child(monster_model_inst)
+	if not monster_model_inst:
+		var path = "res://assets/models/meshy_mob.glb" if ResourceLoader.exists("res://assets/models/meshy_mob.glb") else "res://assets/monsters/meshy_mob.glb"
+		if ResourceLoader.exists(path):
+			var model_scene = load(path) as PackedScene
+			if model_scene:
+				monster_model_inst = model_scene.instantiate()
+				visuals.add_child(monster_model_inst)
 			
 	if monster_model_inst:
 		anim_player = monster_model_inst.find_child("AnimationPlayer", true, false)
