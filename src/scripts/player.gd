@@ -467,9 +467,14 @@ class TorsoAimModifier extends SkeletonModifier3D:
 
 		var hips_rot := skel.get_bone_pose_rotation(hips_idx)
 		var hips_y := hips_rot.get_euler().y
-		var delta_y := hips_y - idle_hips_y
+		var delta_y := angle_difference(idle_hips_y, hips_y)
+
+		if abs(delta_y) < 0.001:
+			return
+
+		var q_yaw := Quaternion(Vector3.UP, -delta_y)
+		var q_corr_local := hips_rot.inverse() * q_yaw * hips_rot
 
 		var spine_rot := skel.get_bone_pose_rotation(spine_idx)
-		var correction := Quaternion(Vector3.UP, -delta_y)
-		skel.set_bone_pose_rotation(spine_idx, spine_rot * correction)
+		skel.set_bone_pose_rotation(spine_idx, q_corr_local * spine_rot)
 
