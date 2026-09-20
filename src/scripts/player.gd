@@ -101,30 +101,30 @@ func _setup_animation_library() -> void:
 			_make_animation_in_place(anim)
 			library.add_animation(anim_name, anim)
 			
-			# Print Hips initial Y rotation for diagnosis
+			# Print Hips initial position & Y rotation for diagnosis
 			for t in range(anim.get_track_count()):
-				if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and "Hips" in String(anim.track_get_path(t)):
+				if "Hips" in String(anim.track_get_path(t)):
 					if anim.track_get_key_count(t) > 0:
-						var q: Quaternion = anim.track_get_key_value(t, 0)
-						var deg_y = rad_to_deg(q.get_euler().y)
-						print("Anim '%s' Hips Y-rotation = %.1f deg" % [anim_name, deg_y])
+						if anim.track_get_type(t) == Animation.TYPE_POSITION_3D:
+							print("Anim '%s' Hips Position key 0 = %s" % [anim_name, anim.track_get_key_value(t, 0)])
+						elif anim.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+							var q: Quaternion = anim.track_get_key_value(t, 0)
+							var deg_y = rad_to_deg(q.get_euler().y)
+							print("Anim '%s' Hips Y-rotation = %.1f deg" % [anim_name, deg_y])
 			print("Registered animation: ", anim_name)
 		inst.queue_free()
 
 const BASELINE_HIPS_Y_RAD: float = deg_to_rad(-58.2)
 
 func _make_animation_in_place(anim: Animation) -> void:
-	for i in range(anim.get_track_count()):
+	var i = 0
+	while i < anim.get_track_count():
 		var path_str = String(anim.track_get_path(i))
 		var is_hips = ("Hips" in path_str or "hips" in path_str or "Root" in path_str or "root" in path_str)
 
 		if is_hips and anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
-			var key_count = anim.track_get_key_count(i)
-			if key_count > 0:
-				var initial_pos: Vector3 = anim.track_get_key_value(i, 0)
-				for k in range(key_count):
-					var cur: Vector3 = anim.track_get_key_value(i, k)
-					anim.track_set_key_value(i, k, Vector3(initial_pos.x, cur.y, initial_pos.z))
+			anim.remove_track(i)
+			continue
 
 		elif is_hips and anim.track_get_type(i) == Animation.TYPE_ROTATION_3D:
 			var key_count = anim.track_get_key_count(i)
@@ -137,6 +137,7 @@ func _make_animation_in_place(anim: Animation) -> void:
 					for k in range(key_count):
 						var cur_q: Quaternion = anim.track_get_key_value(i, k)
 						anim.track_set_key_value(i, k, q_align * cur_q)
+		i += 1
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Animation Tree Architecture
