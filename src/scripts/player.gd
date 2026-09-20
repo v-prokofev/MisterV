@@ -276,10 +276,15 @@ func _apply_lower_body_filter() -> void:
 		var track_type = atk_anim.track_get_type(i)
 		var is_upper: bool = false
 
-		if lower_set.has(clean_bone):
-			is_upper = false     # Hips and legs come from locomotion
+		if clean_bone == "Hips":
+			if track_type == Animation.TYPE_POSITION_3D:
+				is_upper = false # Position (stride/bounce) comes from locomotion
+			else:
+				is_upper = true  # Rotation comes from upper_sm (keeps Hips & Spine facing target!)
+		elif lower_set.has(clean_bone):
+			is_upper = false     # Leg bones (stride steps) come from locomotion
 		else:
-			is_upper = true      # Torso (Spine), shoulders, arms, head come from upper_sm
+			is_upper = true      # Torso, shoulders, arms, head come from upper_sm
 
 		body_blend.set_filter_path(track_path, is_upper)
 		if is_upper:
