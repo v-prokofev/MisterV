@@ -54,7 +54,6 @@ func die() -> void:
 	if is_dead:
 		return
 	is_dead = true
-	visible = false
 	
 	var col_shape = find_child("CollisionShape3D", true, false) as CollisionShape3D
 	if col_shape:
@@ -72,7 +71,6 @@ func die() -> void:
 func respawn() -> void:
 	current_health = max_health
 	is_dead = false
-	visible = true
 	
 	var col_shape = find_child("CollisionShape3D", true, false) as CollisionShape3D
 	if col_shape:
