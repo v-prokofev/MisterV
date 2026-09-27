@@ -8,8 +8,15 @@ var is_dark_text: bool = false
 
 var sprite3d: Sprite3D
 var viewport: SubViewport
+var hp_container: Control
 var progress_bar: ProgressBar
 var hp_label: Label
+
+# Respawn clock components
+var clock_container: Control
+var respawn_duration: float = 10.0
+var respawn_elapsed: float = 0.0
+var is_respawning: bool = false
 
 func setup(p_max_hp: float, _p_title: String = "", p_color: Color = Color(0.15, 0.85, 0.3), height_offset: float = 2.2, p_is_dark_text: bool = false) -> void:
 	max_hp = p_max_hp
@@ -29,19 +36,48 @@ func update_hp(new_hp: float, new_max_hp: float = -1.0) -> void:
 	if hp_label:
 		hp_label.text = "%d" % int(ceil(current_hp))
 
+func start_respawn_clock(duration: float) -> void:
+	respawn_duration = max(0.1, duration)
+	respawn_elapsed = 0.0
+	is_respawning = true
+	if hp_container:
+		hp_container.visible = false
+	if clock_container:
+		clock_container.visible = true
+		clock_container.queue_redraw()
+
+func show_hp_bar(new_hp: float = -1.0, new_max_hp: float = -1.0) -> void:
+	is_respawning = false
+	if new_hp >= 0:
+		update_hp(new_hp, new_max_hp)
+	if clock_container:
+		clock_container.visible = false
+	if hp_container:
+		hp_container.visible = true
+
+func _process(delta: float) -> void:
+	if is_respawning:
+		respawn_elapsed += delta
+		if clock_container:
+			clock_container.queue_redraw()
+
 func _build_ui() -> void:
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(190, 42)
+	viewport.size = Vector2i(200, 200)
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	
-	var container = Control.new()
-	container.custom_minimum_size = Vector2(190, 42)
-	container.size = Vector2(190, 42)
-	viewport.add_child(container)
+	var root_control = Control.new()
+	root_control.size = Vector2(200, 200)
+	viewport.add_child(root_control)
 	
-	# Background panel (Semi-transparent 55%, Rounded 12px pill, No border)
+	# ── 1. HP Bar Container ──────────────────────────────────────────────────
+	hp_container = Control.new()
+	hp_container.size = Vector2(190, 42)
+	hp_container.position = Vector2(5, 79)
+	root_control.add_child(hp_container)
+	
 	var bg_panel = StyleBoxFlat.new()
 	bg_panel.bg_color = Color(0.05, 0.06, 0.09, 0.55)
 	bg_panel.corner_radius_top_left = 12
@@ -56,9 +92,8 @@ func _build_ui() -> void:
 	var panel = Panel.new()
 	panel.size = Vector2(190, 42)
 	panel.add_theme_stylebox_override("panel", bg_panel)
-	container.add_child(panel)
+	hp_container.add_child(panel)
 	
-	# Fill Stylebox for ProgressBar (Semi-transparent 75%, Rounded 10px fill)
 	var fill_color = Color(bar_color.r, bar_color.g, bar_color.b, 0.75)
 	var fill_style = StyleBoxFlat.new()
 	fill_style.bg_color = fill_color
@@ -66,10 +101,6 @@ func _build_ui() -> void:
 	fill_style.corner_radius_top_right = 10
 	fill_style.corner_radius_bottom_left = 10
 	fill_style.corner_radius_bottom_right = 10
-	fill_style.border_width_left = 0
-	fill_style.border_width_top = 0
-	fill_style.border_width_right = 0
-	fill_style.border_width_bottom = 0
 	
 	var back_style = StyleBoxFlat.new()
 	back_style.bg_color = Color(0.1, 0.12, 0.16, 0.45)
@@ -77,10 +108,6 @@ func _build_ui() -> void:
 	back_style.corner_radius_top_right = 10
 	back_style.corner_radius_bottom_left = 10
 	back_style.corner_radius_bottom_right = 10
-	back_style.border_width_left = 0
-	back_style.border_width_top = 0
-	back_style.border_width_right = 0
-	back_style.border_width_bottom = 0
 	
 	progress_bar = ProgressBar.new()
 	progress_bar.position = Vector2(4, 4)
@@ -90,9 +117,8 @@ func _build_ui() -> void:
 	progress_bar.add_theme_stylebox_override("fill", fill_style)
 	progress_bar.max_value = max_hp
 	progress_bar.value = current_hp
-	container.add_child(progress_bar)
+	hp_container.add_child(progress_bar)
 	
-	# Crisp numeric HP label (Font size 22)
 	hp_label = Label.new()
 	hp_label.position = Vector2(4, 4)
 	hp_label.size = Vector2(182, 34)
@@ -110,7 +136,15 @@ func _build_ui() -> void:
 		hp_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
 		hp_label.add_theme_constant_override("outline_size", 5)
 		
-	container.add_child(hp_label)
+	hp_container.add_child(hp_label)
+	
+	# ── 2. Respawn Clock Container ───────────────────────────────────────────
+	clock_container = Control.new()
+	clock_container.size = Vector2(130, 130)
+	clock_container.position = Vector2(35, 35)
+	clock_container.visible = false
+	clock_container.draw.connect(_draw_respawn_clock)
+	root_control.add_child(clock_container)
 	
 	# Billboard Sprite3D
 	sprite3d = Sprite3D.new()
@@ -119,3 +153,38 @@ func _build_ui() -> void:
 	sprite3d.pixel_size = 0.0075
 	sprite3d.texture = viewport.get_texture()
 	add_child(sprite3d)
+
+func _draw_respawn_clock() -> void:
+	if not clock_container:
+		return
+		
+	var center = Vector2(65, 65)
+	var radius = 46.0
+	var thickness = 14.0
+	
+	# 1. Dark background disc
+	clock_container.draw_circle(center, radius + 7.0, Color(0.05, 0.06, 0.09, 0.7))
+	
+	# 2. Base RED ring (100% RED at death)
+	clock_container.draw_arc(center, radius, 0.0, TAU, 64, Color(0.9, 0.15, 0.2, 0.95), thickness, true)
+	
+	# 3. Clockwise GREEN sector (grows from top -PI/2 clockwise as time elapses)
+	var ratio = clamp(respawn_elapsed / respawn_duration, 0.0, 1.0)
+	if ratio > 0.005:
+		var start_angle = -PI / 2.0
+		var end_angle = start_angle + ratio * TAU
+		clock_container.draw_arc(center, radius, start_angle, end_angle, 64, Color(0.15, 0.85, 0.35, 0.98), thickness, true)
+		
+	# 4. Countdown seconds label in center
+	var font = ThemeDB.fallback_font
+	var remaining_sec = max(0, ceil(respawn_duration - respawn_elapsed))
+	var text_str = "%d" % int(remaining_sec)
+	var font_size = 28
+	
+	var string_size = font.get_string_size(text_str, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	var text_pos = center + Vector2(-string_size.x / 2.0, string_size.y / 3.0)
+	
+	# Text outline
+	clock_container.draw_string_outline(font, text_pos, text_str, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, 5, Color(0, 0, 0, 0.9))
+	# Text fill
+	clock_container.draw_string(font, text_pos, text_str, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1, 1, 1, 0.95))

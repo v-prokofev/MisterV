@@ -1,35 +1,31 @@
-extends CharacterBody3D
+extends BaseMob
 
-@export var monster_name: String = "Makra Monster"
-@export var max_health: float = 120.0
+@export var monster_name: String = "Makra Monster":
+	set(val):
+		monster_name = val
+		mob_name = val
 @export var move_speed: float = 3.5
 @export var aggro_range: float = 10.0
 @export var attack_range: float = 2.2
 @export var attack_damage: float = 15.0
 @export var attack_cooldown: float = 1.6
-@export var respawn_time: float = 10.0
 
-var current_health: float = 120.0
-var is_dead: bool = false
-var is_attacking: bool = false
 var can_attack: bool = true
+var is_attacking: bool = false
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var visuals: Node3D = $Visuals
 
-var health_bar = null
 var anim_player: AnimationPlayer = null
 var monster_model_inst: Node3D = null
 var original_material: StandardMaterial3D = null
 
 func _ready() -> void:
-	add_to_group("dummies")
-	add_to_group("targets")
+	mob_name = monster_name
+	mob_color = Color(0.9, 0.15, 0.25)
+	super._ready()
 	add_to_group("monsters")
-	
-	current_health = max_health
 	_setup_model_and_animations()
-	_setup_health_bar()
 
 func _setup_model_and_animations() -> void:
 	if not visuals:
@@ -52,15 +48,6 @@ func _setup_model_and_animations() -> void:
 		anim_player = find_child("AnimationPlayer", true, false)
 		
 	_play_anim("idle")
-
-func _setup_health_bar() -> void:
-	var bar_script = preload("res://scripts/floating_health_bar.gd")
-	health_bar = bar_script.new()
-	add_child(health_bar)
-	health_bar.setup(max_health, monster_name, Color(0.9, 0.15, 0.25), 2.3)
-
-func is_targetable() -> bool:
-	return not is_dead
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
@@ -86,13 +73,11 @@ func _physics_process(delta: float) -> void:
 	var dist = global_position.distance_to(player.global_position)
 	
 	if dist <= aggro_range:
-		# Face towards player
 		var target_pos = Vector3(player.global_position.x, global_position.y, player.global_position.z)
 		if global_position.distance_squared_to(target_pos) > 0.01:
 			look_at(target_pos, Vector3.UP)
 			
 		if dist > attack_range and not is_attacking:
-			# Chase player
 			var dir = (target_pos - global_position).normalized()
 			velocity.x = dir.x * move_speed
 			velocity.z = dir.z * move_speed
@@ -141,7 +126,6 @@ func _perform_attack(target_player: Node3D) -> void:
 	can_attack = false
 	_play_anim("attack")
 	
-	# Attack hit point delay (0.65s into sword swing animation)
 	await get_tree().create_timer(0.65).timeout
 	if not is_dead and is_instance_valid(target_player):
 		if target_player.has_method("take_damage"):
@@ -155,22 +139,7 @@ func _perform_attack(target_player: Node3D) -> void:
 	await get_tree().create_timer(remaining_cd).timeout
 	can_attack = true
 
-func take_damage(amount: float) -> void:
-	if is_dead:
-		return
-		
-	current_health -= amount
-	print("Monster ", monster_name, " took ", amount, " damage! HP: ", current_health)
-	
-	if health_bar:
-		health_bar.update_hp(current_health)
-		
-	_flash_hit()
-	
-	if current_health <= 0:
-		_die()
-
-func _flash_hit() -> void:
+func _on_hit_flash() -> void:
 	if not monster_model_inst or is_dead:
 		return
 	var mesh_inst: MeshInstance3D = monster_model_inst.find_child("*", true, false) as MeshInstance3D
@@ -188,27 +157,15 @@ func _flash_hit() -> void:
 	if is_instance_valid(mesh_inst) and not is_dead and original_material:
 		mesh_inst.set_surface_override_material(0, original_material)
 
-func _die() -> void:
-	is_dead = true
-	visible = false
-	collision_shape.set_deferred("disabled", true)
-	
-	print("Monster ", monster_name, " defeated! Respawning in ", respawn_time, " seconds...")
+func _on_death() -> void:
+	if visuals:
+		visuals.visible = false
 	_create_death_debris()
-	
-	get_tree().create_timer(respawn_time).timeout.connect(_respawn)
 
-func _respawn() -> void:
-	current_health = max_health
-	is_dead = false
-	visible = true
-	collision_shape.set_deferred("disabled", false)
-	
-	if health_bar:
-		health_bar.update_hp(current_health)
-		
+func _on_respawn() -> void:
+	if visuals:
+		visuals.visible = true
 	_animate_respawn_glow()
-	print("Monster ", monster_name, " HAS RESPAWNED!")
 
 func _animate_respawn_glow() -> void:
 	if not monster_model_inst:

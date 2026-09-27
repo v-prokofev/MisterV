@@ -1,23 +1,19 @@
-extends StaticBody3D
+extends BaseMob
 
-@export var max_health: float = 60.0
-@export var respawn_time: float = 10.0
-@export var object_color: Color = Color(0.2, 0.85, 1.0) # Glowing Cyan/Blue Crystal
-
-var current_health: float = 60.0
-var is_destroyed: bool = false
+@export var object_color: Color = Color(0.2, 0.85, 1.0):
+	set(val):
+		object_color = val
+		mob_color = val
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
 var original_material: StandardMaterial3D
 
-var health_bar = null
-
 func _ready() -> void:
-	add_to_group("dummies")
-	add_to_group("targets")
-	current_health = max_health
+	mob_name = name
+	mob_color = object_color
+	super._ready()
 	
 	if mesh_instance:
 		original_material = StandardMaterial3D.new()
@@ -28,32 +24,9 @@ func _ready() -> void:
 		original_material.emission = object_color
 		original_material.emission_energy_multiplier = 1.5
 		mesh_instance.set_surface_override_material(0, original_material)
-		
-	var bar_script = preload("res://scripts/floating_health_bar.gd")
-	health_bar = bar_script.new()
-	add_child(health_bar)
-	health_bar.setup(max_health, name, object_color, 2.0)
 
-func is_targetable() -> bool:
-	return not is_destroyed
-
-func take_damage(amount: float) -> void:
-	if is_destroyed:
-		return
-		
-	current_health -= amount
-	print("Destructible ", name, " took ", amount, " damage! Current HP: ", current_health)
-	
-	if health_bar:
-		health_bar.update_hp(current_health)
-		
-	_flash_hit()
-	
-	if current_health <= 0:
-		_destroy_object()
-
-func _flash_hit() -> void:
-	if not mesh_instance or is_destroyed:
+func _on_hit_flash() -> void:
+	if not mesh_instance or is_dead:
 		return
 		
 	var flash_mat = StandardMaterial3D.new()
@@ -64,34 +37,20 @@ func _flash_hit() -> void:
 	mesh_instance.set_surface_override_material(0, flash_mat)
 	
 	await get_tree().create_timer(0.12).timeout
-	
-	if is_instance_valid(mesh_instance) and not is_destroyed:
+	if is_instance_valid(mesh_instance) and not is_dead and original_material:
 		mesh_instance.set_surface_override_material(0, original_material)
 
-func _destroy_object() -> void:
-	is_destroyed = true
-	visible = false
-	collision_shape.set_deferred("disabled", true)
-	
-	print("Destructible ", name, " destroyed! Respawning in ", respawn_time, " seconds...")
-	
-	# Spawn visual explosion: 3D physical fragments + particle burst
+func _on_death() -> void:
+	if mesh_instance:
+		mesh_instance.visible = false
 	_create_shatter_debris()
 	_create_particle_burst()
-	
-	# Schedule respawn in 10 seconds
-	get_tree().create_timer(respawn_time).timeout.connect(_respawn_object)
 
-func _respawn_object() -> void:
-	current_health = max_health
-	is_destroyed = false
-	visible = true
-	collision_shape.set_deferred("disabled", false)
-	
-	# Spawn respawn particle flash & bright birth animation
+func _on_respawn() -> void:
+	if mesh_instance:
+		mesh_instance.visible = true
 	_create_particle_burst()
 	_animate_respawn_glow()
-	print("Destructible ", name, " HAS RESPAWNED!")
 
 func _animate_respawn_glow() -> void:
 	if not mesh_instance:
@@ -101,8 +60,6 @@ func _animate_respawn_glow() -> void:
 	respawn_mat.roughness = 0.2
 	respawn_mat.metallic = 0.3
 	respawn_mat.emission_enabled = true
-	
-	# Born super bright white with high emission energy
 	respawn_mat.albedo_color = Color(1.0, 1.0, 1.0)
 	respawn_mat.emission = Color(1.0, 1.0, 1.0)
 	respawn_mat.emission_energy_multiplier = 8.0
@@ -117,9 +74,10 @@ func _animate_respawn_glow() -> void:
 	tween.tween_property(mesh_instance, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	
 	await tween.finished
-	if is_instance_valid(mesh_instance) and not is_destroyed:
+	if is_instance_valid(mesh_instance) and not is_dead:
 		mesh_instance.scale = Vector3.ONE
-		mesh_instance.set_surface_override_material(0, original_material)
+		if original_material:
+			mesh_instance.set_surface_override_material(0, original_material)
 
 func _create_shatter_debris() -> void:
 	var num_chunks = 8
@@ -127,8 +85,8 @@ func _create_shatter_debris() -> void:
 	
 	for i in range(num_chunks):
 		var chunk = RigidBody3D.new()
-		chunk.collision_layer = 0 # No collision with player to prevent physics push
-		chunk.collision_mask = 1  # Collide with floor
+		chunk.collision_layer = 0
+		chunk.collision_mask = 1
 		
 		var mesh_inst = MeshInstance3D.new()
 		var box_mesh = BoxMesh.new()
@@ -156,7 +114,6 @@ func _create_shatter_debris() -> void:
 		chunk.apply_central_impulse(impulse)
 		chunk.apply_torque_impulse(Vector3(randf_range(-4, 4), randf_range(-4, 4), randf_range(-4, 4)))
 		
-		# Fade and cleanup debris after 3 seconds
 		_fade_and_cleanup_chunk(chunk, mesh_inst, chunk_mat)
 
 func _create_particle_burst() -> void:
