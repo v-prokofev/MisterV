@@ -1,4 +1,4 @@
-extends BaseMob
+extends "res://scripts/base_mob.gd"
 
 @export var object_color: Color = Color(0.2, 0.85, 1.0):
 	set(val):

@@ -1,4 +1,4 @@
-extends BaseMob
+extends "res://scripts/base_mob.gd"
 
 @export var monster_name: String = "Makra Monster":
 	set(val):
