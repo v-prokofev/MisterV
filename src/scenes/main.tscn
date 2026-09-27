@@ -3,6 +3,10 @@
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player_scene"]
 [ext_resource type="PackedScene" path="res://scenes/destructible_object.tscn" id="3_destructible_scene"]
 [ext_resource type="PackedScene" path="res://scenes/monster.tscn" id="4_monster_scene"]
+[ext_resource type="PackedScene" path="res://scenes/peasant_mob.tscn" id="5_peasant_mob_scene"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/npc_defender.tscn" id="6_defender_scene"]
+[ext_resource type="PackedScene" path="res://scenes/npcs/townsperson.tscn" id="7_townsperson_scene"]
+[ext_resource type="PackedScene" path="res://assets/models/people/peasant_1/peasant_1.fbx" id="8_peasant_fbx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.1, 0.08, 0.18, 1)
@@ -115,3 +119,29 @@ monster_name = "Монстр Макра #2"
 [node name="MakraMonster3" parent="Monsters" unique_id=829379580 instance=ExtResource("4_monster_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, -10)
 monster_name = "Монстр Макра #3"
+
+[node name="BjornDefender_Fist" parent="Monsters" unique_id=948201953 instance=ExtResource("6_defender_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -6)
+npc_name = "Защитник Бьерн (Кулачный бой)"
+weapon_type = 0
+model_scene = ExtResource("8_peasant_fbx")
+
+[node name="BjornDefender_Sword" parent="Monsters" unique_id=948201954 instance=ExtResource("6_defender_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -6)
+npc_name = "Защитник Бьерн (С мечом)"
+weapon_type = 1
+model_scene = ExtResource("8_peasant_fbx")
+
+[node name="GirlDefender_Fist" parent="Monsters" unique_id=948201950 instance=ExtResource("6_defender_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 5)
+npc_name = "Защитница (Кулачный бой)"
+weapon_type = 0
+
+[node name="GirlDefender_Sword" parent="Monsters" unique_id=948201952 instance=ExtResource("6_defender_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 5)
+npc_name = "Защитница (С мечом)"
+weapon_type = 1
+
+[node name="TownspersonMob" parent="Monsters" unique_id=948201951 instance=ExtResource("7_townsperson_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -5)
+npc_name = "Житель деревни"

@@ -18,11 +18,20 @@ var respawn_duration: float = 10.0
 var respawn_elapsed: float = 0.0
 var is_respawning: bool = false
 
-func setup(p_max_hp: float, _p_title: String = "", p_color: Color = Color(0.15, 0.85, 0.3), height_offset: float = 2.2, p_is_dark_text: bool = false) -> void:
+var reward_type: int = 0
+var reward_amount: float = 5.0
+var stat_badge_label: Label
+
+var is_player_bar: bool = false
+
+func setup(p_max_hp: float, _p_title: String = "", p_color: Color = Color(0.15, 0.85, 0.3), height_offset: float = 2.2, p_is_dark_text: bool = false, p_reward_type: int = 0, p_reward_amount: float = 5.0, p_is_player_bar: bool = false) -> void:
 	max_hp = p_max_hp
 	current_hp = p_max_hp
 	bar_color = p_color
 	is_dark_text = p_is_dark_text
+	reward_type = p_reward_type
+	reward_amount = p_reward_amount
+	is_player_bar = p_is_player_bar
 	position = Vector3(0, height_offset, 0)
 	_build_ui()
 
@@ -125,18 +134,45 @@ func _build_ui() -> void:
 	hp_label.text = "%d" % int(ceil(current_hp))
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hp_label.add_theme_font_size_override("font_size", 22)
+	hp_label.add_theme_font_size_override("font_size", 30)
 	
 	if is_dark_text:
 		hp_label.add_theme_color_override("font_color", Color(0.04, 0.1, 0.06, 0.95))
 		hp_label.add_theme_color_override("font_outline_color", Color(0.85, 1.0, 0.88, 0.8))
-		hp_label.add_theme_constant_override("outline_size", 3)
+		hp_label.add_theme_constant_override("outline_size", 4)
 	else:
 		hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.95))
-		hp_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.9))
-		hp_label.add_theme_constant_override("outline_size", 5)
+		hp_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+		hp_label.add_theme_constant_override("outline_size", 7)
 		
 	hp_container.add_child(hp_label)
+	
+	# ── 1b. Stat Reward Badge (Only for mobs, not player) ───────────────────
+	if not is_player_bar:
+		var badge_icon = "[color=#ff3344]♥[/color]"
+		var badge_amount_str = ""
+		match reward_type:
+			0: # HP
+				badge_icon = "[color=#ff3344]♥[/color]" # Red heart for HP
+				badge_amount_str = "%d" % int(reward_amount)
+			1: # ATK
+				badge_icon = "[color=#ffcc00]⚔[/color]" # Gold/orange swords for ATK
+				badge_amount_str = "%d" % int(reward_amount)
+			2: # SPD
+				badge_icon = "[color=#33ccff]⚡[/color]" # Cyan lightning for SPD
+				badge_amount_str = "%.1f" % reward_amount
+			3: # REGEN
+				badge_icon = "[color=#00ff88]💖[/color]" # Emerald glowing heart for HP REGEN
+				badge_amount_str = "+%.1f/s" % reward_amount
+				
+		var rich_badge = RichTextLabel.new()
+		rich_badge.size = Vector2(190, 70)
+		rich_badge.position = Vector2(0, -65)
+		rich_badge.bbcode_enabled = true
+		rich_badge.scroll_active = false
+		rich_badge.autowrap_mode = TextServer.AUTOWRAP_OFF
+		rich_badge.text = "[center][outline_size=8][outline_color=#000000][font_size=40]%s %s[/font_size][/outline_color][/outline_size][/center]" % [badge_icon, badge_amount_str]
+		hp_container.add_child(rich_badge)
 	
 	# ── 2. Respawn Clock Container ───────────────────────────────────────────
 	clock_container = Control.new()

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://8heo0ipe2qeo"
+path="res://.godot/imported/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj-8a47c057126927715649b15d6d97d7cf.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj-8a47c057126927715649b15d6d97d7cf.mesh"]
+
+source_file="res://assets/weapons/sword/Meshy_AI_Greenclad_Guardian_0906194333_texture_obj/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj"
+dest_files=["res://.godot/imported/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj-8a47c057126927715649b15d6d97d7cf.mesh", "res://.godot/imported/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj-8a47c057126927715649b15d6d97d7cf.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @export var move_speed: float = 6.5
-@export var attack_range: float = 6
+@export var attack_range: float = 12.0
 @export var attack_cooldown: float = 2.4
 @export_range(0.0, 1.0) var attack_cast_point_ratio: float = 0.40
 @export var magic_sphere_scene: PackedScene = preload("res://scenes/magic_sphere.tscn")
@@ -51,9 +51,13 @@ var hud_canvas: CanvasLayer = null
 var hud_progress_bar: ProgressBar = null
 var hud_hp_label: Label = null
 
+@export var hp_regen: float = 0.0 # HP regenerated per second
+var initial_player_spawn_pos: Vector3 = Vector3.ZERO
+
 func _ready() -> void:
 	add_to_group("player")
 	Engine.time_scale = 1.0
+	initial_player_spawn_pos = global_position
 	current_health = max_health
 	_setup_character_texture()
 	_setup_animation_library()
@@ -102,6 +106,8 @@ func _setup_animation_library() -> void:
 		"attack":      "res://assets/player/Standing 1H Magic Attack 01.fbx",
 	}
 
+	var target_skel: Skeleton3D = _find_skeleton(vampire_model)
+
 	for anim_name in anim_paths:
 		var scene: PackedScene = load(anim_paths[anim_name])
 		if not scene:
@@ -112,10 +118,51 @@ func _setup_animation_library() -> void:
 			var anim = source_ap.get_animation("mixamo_com").duplicate()
 			anim.loop_mode = Animation.LOOP_LINEAR if anim_name != "attack" else Animation.LOOP_NONE
 			_make_animation_in_place(anim)
+			if target_skel:
+				_sanitize_and_retarget_anim(anim, target_skel)
 			library.add_animation(anim_name, anim)
 			
 			print("Registered animation: ", anim_name)
 		inst.queue_free()
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if not node:
+		return null
+	if node is Skeleton3D:
+		return node as Skeleton3D
+	for child in node.get_children():
+		var skel = _find_skeleton(child)
+		if skel:
+			return skel
+	return null
+
+func _sanitize_and_retarget_anim(anim: Animation, skel: Skeleton3D) -> void:
+	if not skel or not anim_player:
+		return
+	var root_node_obj = anim_player.get_node_or_null(anim_player.root_node)
+	if not root_node_obj:
+		root_node_obj = anim_player.get_parent()
+	var skel_path_str = String(root_node_obj.get_path_to(skel))
+	for i in range(anim.get_track_count() - 1, -1, -1):
+		var path_str = String(anim.track_get_path(i))
+		var first_colon = path_str.find(":")
+		if first_colon == -1:
+			if not root_node_obj.has_node(NodePath(path_str)):
+				anim.remove_track(i)
+			continue
+		var node_part = path_str.substr(0, first_colon)
+		var sub_part = path_str.substr(first_colon + 1)
+		
+		var bone_parts = sub_part.split(":")
+		var bone_name = bone_parts[0]
+		
+		if skel.find_bone(bone_name) != -1:
+			if node_part != skel_path_str:
+				var new_path_str = skel_path_str + ":" + sub_part
+				anim.track_set_path(i, NodePath(new_path_str))
+		else:
+			if not root_node_obj.has_node(NodePath(node_part)):
+				anim.remove_track(i)
 
 const BASELINE_HIPS_Y_RAD: float = deg_to_rad(-58.2)
 const BASELINE_HIPS_POS_Y: float = 0.0055
@@ -302,6 +349,7 @@ func _apply_lower_body_filter() -> void:
 	print("Upper-body filter applied: %d tracks assigned to upper blend out of %d total" % [filtered, total])
 
 func _physics_process(delta: float) -> void:
+	_process_hp_regen(delta)
 	# 0. Camera zoom
 	if camera:
 		camera.fov = lerp(camera.fov, target_fov, delta * 10.0)
@@ -498,7 +546,7 @@ func _setup_player_health_ui() -> void:
 	var bar_script = preload("res://scripts/floating_health_bar.gd")
 	health_bar_3d = bar_script.new()
 	add_child(health_bar_3d)
-	health_bar_3d.setup(max_health, "", Color(0.15, 0.85, 0.35), 2.2, true)
+	health_bar_3d.setup(max_health, "", Color(0.15, 0.85, 0.35), 2.2, false, 0, 0.0, true)
 
 	hud_canvas = CanvasLayer.new()
 	add_child(hud_canvas)
@@ -562,10 +610,81 @@ func _setup_player_health_ui() -> void:
 	hud_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hud_hp_label.add_theme_font_size_override("font_size", 24)
-	hud_hp_label.add_theme_color_override("font_color", Color(0.04, 0.1, 0.06, 0.95))
-	hud_hp_label.add_theme_color_override("font_outline_color", Color(0.85, 1.0, 0.88, 0.8))
-	hud_hp_label.add_theme_constant_override("outline_size", 3)
+	hud_hp_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	hud_hp_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+	hud_hp_label.add_theme_constant_override("outline_size", 5)
 	panel.add_child(hud_hp_label)
+
+func absorb_stat(p_type: int, p_amount: float) -> void:
+	if is_dead:
+		return
+		
+	var stat_text = ""
+	var stat_color = Color(0.2, 0.95, 0.4)
+	
+	match p_type:
+		0: # HP
+			max_health += p_amount
+			current_health = min(max_health, current_health + p_amount)
+			stat_text = "+%d [color=#ff3344]♥[/color]" % int(p_amount)
+		1: # ATK
+			stat_text = "+%d [color=#ffcc00]⚔[/color]" % int(p_amount)
+		2: # SPD
+			move_speed += p_amount
+			stat_text = "+%.1f [color=#33ccff]⚡[/color]" % p_amount
+		3: # REGEN
+			hp_regen += p_amount
+			stat_text = "+%.1f/s [color=#00ff88]💖[/color]" % p_amount
+			
+	print("Vampire absorbed stat! ", stat_text)
+	
+	# Update HUD and 3D bar
+	if health_bar_3d:
+		health_bar_3d.update_hp(current_health, max_health)
+	if hud_progress_bar:
+		hud_progress_bar.max_value = max_health
+		hud_progress_bar.value = current_health
+	if hud_hp_label:
+		hud_hp_label.text = "%d" % int(ceil(current_health))
+		
+	# Spawn Floating Stat Popup above player head
+	var popup_script = preload("res://scripts/floating_stat_popup.gd")
+	var popup = popup_script.new()
+	var scene_root = get_tree().current_scene if get_tree() and get_tree().current_scene else get_parent()
+	scene_root.add_child(popup)
+	popup.setup(stat_text, Color(1.0, 1.0, 1.0), global_position + Vector3(0, 2.3, 0))
+
+func _process_hp_regen(delta: float) -> void:
+	var active_regen = max(2.0, hp_regen)
+	if current_health >= max_health:
+		return
+	var new_hp = min(max_health, current_health + active_regen * delta)
+	current_health = new_hp
+	if current_health > 0.0 and is_dead:
+		is_dead = false
+		print("Player revived! HP: ", current_health)
+		
+	if health_bar_3d:
+		health_bar_3d.update_hp(current_health, max_health)
+	if hud_progress_bar:
+		hud_progress_bar.max_value = max_health
+		hud_progress_bar.value = current_health
+	if hud_hp_label:
+		hud_hp_label.text = "%d" % int(ceil(current_health))
+
+func heal(amount: float) -> void:
+	current_health = min(max_health, current_health + amount)
+	if current_health > 0.0 and is_dead:
+		is_dead = false
+		print("Player revived via heal! HP: ", current_health)
+	print("Vampire absorbed soul! Restored +", amount, " HP. Total HP: ", current_health)
+	
+	if health_bar_3d:
+		health_bar_3d.update_hp(current_health)
+	if hud_progress_bar:
+		hud_progress_bar.value = current_health
+	if hud_hp_label:
+		hud_hp_label.text = "%d" % int(ceil(current_health))
 
 func take_damage(amount: float) -> void:
 	if is_dead:
@@ -607,16 +726,16 @@ func _flash_player_hit() -> void:
 
 func _on_player_die() -> void:
 	is_dead = true
-	print("PLAYER WAS DEFEATED! Auto-respawning in 4 seconds...")
-	await get_tree().create_timer(4.0).timeout
-	global_position = Vector3(0, 0, 0)
-	current_health = max_health
-	is_dead = false
+	global_position = initial_player_spawn_pos
+	velocity = Vector3.ZERO
+	current_health = 0.0
+	
 	if health_bar_3d:
-		health_bar_3d.update_hp(current_health)
+		health_bar_3d.update_hp(current_health, max_health)
 	if hud_progress_bar:
 		hud_progress_bar.value = current_health
 	if hud_hp_label:
-		hud_hp_label.text = "%d" % int(ceil(current_health))
-	print("PLAYER HAS HEALED TO FULL HP AND RESPAWNED AT (0,0)!")
+		hud_hp_label.text = "0"
+		
+	print("PLAYER DIED! Teleported back to initial spawn point with 0 HP.")
 

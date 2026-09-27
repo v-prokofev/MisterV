@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://c8p61k5m5wd31"]
+
+[ext_resource type="ArrayMesh" uid="uid://bs0dt8sjigx4d" path="res://assets/weapons/axe/Meshy_AI_Greenclad_Guardian_0906194536_texture_obj/Meshy_AI_Greenclad_Guardian_0906194536_texture.obj" id="1_sxbk6"]
+
+[node name="Axe" type="Node3D" unique_id=347684021]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=577708385]
+transform = Transform3D(4.371139e-08, 0, -1, -1, -4.371139e-08, -4.371139e-08, -4.371139e-08, 1, -1.9106855e-15, 0.331667, 0.05712, 0.002246)
+mesh = ExtResource("1_sxbk6")

@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3 uid="uid://bpeasant_mob_scene_001"]
+
+[ext_resource type="Script" path="res://scripts/peasant_mob.gd" id="1_peasant_mob_script"]
+[ext_resource type="PackedScene" path="res://assets/models/peasant/peasant_1.fbx" id="2_peasant_fbx"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_peasant_mob"]
+radius = 0.45
+height = 1.8
+
+[node name="PeasantMob" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1_peasant_mob_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_peasant_mob")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="PeasantModel" parent="Visuals" instance=ExtResource("2_peasant_fbx")]

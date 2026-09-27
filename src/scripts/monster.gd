@@ -23,6 +23,8 @@ var original_material: StandardMaterial3D = null
 func _ready() -> void:
 	mob_name = monster_name
 	mob_color = Color(0.9, 0.15, 0.25)
+	reward_type = StatRewardType.REGEN
+	reward_amount = 1.0
 	super._ready()
 	add_to_group("monsters")
 	_setup_model_and_animations()

@@ -13,6 +13,15 @@ var original_material: StandardMaterial3D
 func _ready() -> void:
 	mob_name = name
 	mob_color = object_color
+	
+	# Pink Crystal -> +5 HP, Blue Crystal -> +2 ATK
+	if object_color.r > 0.6:
+		reward_type = StatRewardType.HP
+		reward_amount = 5.0
+	else:
+		reward_type = StatRewardType.ATK
+		reward_amount = 2.0
+		
 	super._ready()
 	
 	if mesh_instance:

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/weapons/sword/Meshy_AI_Greenclad_Guardian_0906194333_texture_obj/Meshy_AI_Greenclad_Guardian_0906194333_texture.obj" id="1_o616w"]
+
+[node name="Sword" type="Node3D" unique_id=168453162]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=890284900]
+transform = Transform3D(-0.020138638, 0.07074529, -0.9972911, -0.9629202, 0.2670414, 0.03838781, 0.26903376, 0.9610848, 0.062744215, 0.31, 0.125, 0.016)
+mesh = ExtResource("1_o616w")
