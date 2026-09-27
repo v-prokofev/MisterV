@@ -362,14 +362,17 @@ func _physics_process(delta: float) -> void:
 	_update_locomotion(input_dir)
 
 	# 6. Smooth upper-body blend weight & dynamic filtering
-	# Upper-body blend layer ONLY activates during attack cast animation
+	is_moving = (input_dir != Vector2.ZERO and velocity.length() > 0.3)
 	_upper_blend_target = 1.0 if is_attacking else 0.0
 
-	is_moving = (input_dir != Vector2.ZERO and velocity.length() > 0.3)
-
 	_upper_blend_current = lerp(_upper_blend_current, _upper_blend_target, delta * 14.0)
-	if anim_tree:
+	if anim_tree and anim_tree.tree_root:
 		anim_tree.set("parameters/body_blend/blend_amount", _upper_blend_current)
+		var body_blend = anim_tree.tree_root.get_node_or_null("body_blend") as AnimationNodeBlend2
+		if body_blend:
+			# Filter lower body only while running so legs can run while upper body casts.
+			# When standing still, disable filter so the complete attack animation plays smoothly!
+			body_blend.filter_enabled = is_moving
 
 	# 7. Auto-attack
 	attack_timer += delta
