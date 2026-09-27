@@ -27,7 +27,7 @@ glow_bloom = 0.25
 size = Vector3(60, 1, 60)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.16, 0.18, 0.2, 1.0)
+albedo_color = Color(0.2, 0.45, 0.22, 1.0)
 roughness = 0.85
 uv1_scale = Vector3(15, 15, 15)
 
