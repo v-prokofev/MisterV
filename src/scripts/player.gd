@@ -128,8 +128,10 @@ func _make_animation_in_place(anim: Animation) -> void:
 		if is_hips and anim.track_get_type(i) == Animation.TYPE_POSITION_3D:
 			var key_count = anim.track_get_key_count(i)
 			if key_count > 0:
+				var first_y: float = anim.track_get_key_value(i, 0).y
 				for k in range(key_count):
-					anim.track_set_key_value(i, k, Vector3(0.0, BASELINE_HIPS_POS_Y, 0.0))
+					var pos: Vector3 = anim.track_get_key_value(i, k)
+					anim.track_set_key_value(i, k, Vector3(0.0, pos.y - first_y, 0.0))
 
 		elif is_hips and anim.track_get_type(i) == Animation.TYPE_ROTATION_3D:
 			var key_count = anim.track_get_key_count(i)
@@ -319,6 +321,12 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, 0, move_speed)
 		velocity.z = move_toward(velocity.z, 0, move_speed)
+
+	if not is_on_floor():
+		velocity.y -= 19.6 * delta
+	else:
+		velocity.y = 0.0
+
 	move_and_slide()
 
 	# 2. Target
@@ -354,9 +362,8 @@ func _physics_process(delta: float) -> void:
 	_update_locomotion(input_dir)
 
 	# 6. Smooth upper-body blend weight & dynamic filtering
-	# If we have a target or are attacking, keep upper body aimed at target!
-	var has_target := (current_target != null and is_instance_valid(current_target))
-	_upper_blend_target = 1.0 if (is_attacking or has_target) else 0.0
+	# Upper-body blend layer ONLY activates during attack cast animation
+	_upper_blend_target = 1.0 if is_attacking else 0.0
 
 	is_moving = (input_dir != Vector2.ZERO and velocity.length() > 0.3)
 

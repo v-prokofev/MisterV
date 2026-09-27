@@ -1,14 +1,13 @@
-[gd_scene load_steps=10 format=3 uid="uid://bmain_scene_001"]
+[gd_scene format=3 uid="uid://10t4ji1rstre"]
 
-[ext_resource type="PackedScene" uid="uid://bplayer_scene_001" path="res://scenes/player.tscn" id="1_player_scene"]
-[ext_resource type="PackedScene" uid="uid://btarget_dummy_001" path="res://scenes/target_dummy.tscn" id="2_dummy_scene"]
-[ext_resource type="PackedScene" uid="uid://bdestructible_obj_001" path="res://scenes/destructible_object.tscn" id="3_destructible_scene"]
-[ext_resource type="PackedScene" uid="uid://bmonster_scene_001" path="res://scenes/monster.tscn" id="4_monster_scene"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player_scene"]
+[ext_resource type="PackedScene" path="res://scenes/destructible_object.tscn" id="3_destructible_scene"]
+[ext_resource type="PackedScene" path="res://scenes/monster.tscn" id="4_monster_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
-sky_top_color = Color(0.1, 0.08, 0.18, 1.0)
-sky_horizon_color = Color(0.25, 0.15, 0.25, 1.0)
-ground_bottom_color = Color(0.05, 0.05, 0.08, 1.0)
+sky_top_color = Color(0.1, 0.08, 0.18, 1)
+sky_horizon_color = Color(0.25, 0.15, 0.25, 1)
+ground_bottom_color = Color(0.05, 0.05, 0.08, 1)
 
 [sub_resource type="Sky" id="Sky_1"]
 sky_material = SubResource("ProceduralSkyMaterial_1")
@@ -16,7 +15,7 @@ sky_material = SubResource("ProceduralSkyMaterial_1")
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 2
 sky = SubResource("Sky_1")
-ambient_light_color = Color(0.2, 0.15, 0.25, 1.0)
+ambient_light_color = Color(0.2, 0.15, 0.25, 1)
 ambient_light_energy = 1.2
 tonemap_mode = 2
 glow_enabled = true
@@ -27,7 +26,7 @@ glow_bloom = 0.25
 size = Vector3(60, 1, 60)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.2, 0.45, 0.22, 1.0)
+albedo_color = Color(0.2, 0.45, 0.22, 1)
 roughness = 0.85
 uv1_scale = Vector3(15, 15, 15)
 
@@ -35,92 +34,84 @@ uv1_scale = Vector3(15, 15, 15)
 material = SubResource("StandardMaterial3D_floor")
 size = Vector3(60, 1, 60)
 
-[node name="Main" type="Node3D"]
+[node name="Main" type="Node3D" unique_id=738938241]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=392494649]
 environment = SubResource("Environment_1")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2142555401]
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 15, 0)
 light_color = Color(0.95, 0.85, 0.8, 1)
 light_energy = 1.3
 shadow_enabled = true
 
-[node name="Floor" type="StaticBody3D" parent="."]
+[node name="Floor" type="StaticBody3D" parent="." unique_id=315034094]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-collision_layer = 1
 collision_mask = 7
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor" unique_id=833469548]
 shape = SubResource("BoxShape3D_floor")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor" unique_id=2060352602]
 mesh = SubResource("BoxMesh_floor")
 
-[node name="Player" parent="." instance=ExtResource("1_player_scene")]
+[node name="Player" parent="." unique_id=1251455111 instance=ExtResource("1_player_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
 
-[node name="Destructibles" type="Node3D" parent="."]
+[node name="Destructibles" type="Node3D" parent="." unique_id=87143630]
 
-[node name="PinkCrystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -14)
+[node name="PinkCrystal1" parent="Destructibles" unique_id=752857776 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -11)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal1" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -14)
-object_color = Color(0.2, 0.85, 1, 1)
+[node name="BlueCrystal1" parent="Destructibles" unique_id=519501971 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 0, -12)
 
-[node name="PinkCrystal2" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 0)
+[node name="PinkCrystal2" parent="Destructibles" unique_id=848200190 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -9)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal2" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 0)
-object_color = Color(0.2, 0.85, 1, 1)
+[node name="BlueCrystal2" parent="Destructibles" unique_id=1253990910 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 3)
 
-[node name="PinkCrystal3" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+[node name="PinkCrystal3" parent="Destructibles" unique_id=584621030 instance=ExtResource("3_destructible_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 14)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal3" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+[node name="BlueCrystal3" parent="Destructibles" unique_id=1568600325 instance=ExtResource("3_destructible_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 14)
-object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="PinkCrystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -18)
+[node name="PinkCrystal4" parent="Destructibles" unique_id=1631599732 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -14)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal4" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
+[node name="BlueCrystal4" parent="Destructibles" unique_id=1584271061 instance=ExtResource("3_destructible_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
-object_color = Color(0.2, 0.85, 1, 1)
 
-[node name="PinkCrystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -6)
+[node name="PinkCrystal5" parent="Destructibles" unique_id=1627108927 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -4)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal5" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
-object_color = Color(0.2, 0.85, 1, 1)
+[node name="BlueCrystal5" parent="Destructibles" unique_id=513834327 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -4)
 
-[node name="PinkCrystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 6)
+[node name="PinkCrystal6" parent="Destructibles" unique_id=1585396519 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 3)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
-[node name="BlueCrystal6" parent="Destructibles" instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 6)
-object_color = Color(0.2, 0.85, 1, 1)
+[node name="BlueCrystal6" parent="Destructibles" unique_id=1257091859 instance=ExtResource("3_destructible_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6)
 
-[node name="Monsters" type="Node3D" parent="."]
+[node name="Monsters" type="Node3D" parent="." unique_id=1210349215]
 
-[node name="MakraMonster1" parent="Monsters" instance=ExtResource("4_monster_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -4)
+[node name="MakraMonster1" parent="Monsters" unique_id=1758445692 instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -16)
 monster_name = "Монстр Макра #1"
 
-[node name="MakraMonster2" parent="Monsters" instance=ExtResource("4_monster_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -5)
+[node name="MakraMonster2" parent="Monsters" unique_id=1019019530 instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -5)
 monster_name = "Монстр Макра #2"
 
-[node name="MakraMonster3" parent="Monsters" instance=ExtResource("4_monster_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+[node name="MakraMonster3" parent="Monsters" unique_id=829379580 instance=ExtResource("4_monster_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, -10)
 monster_name = "Монстр Макра #3"
-

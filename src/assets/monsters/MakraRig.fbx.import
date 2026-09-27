@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://2h1bj3vbo7hx"
-path="res://.godot/imported/meshy_mob.glb-b14a2783a6803a94395d282d47c60df3.scn"
+uid="uid://diu54n0yrgrim"
+path="res://.godot/imported/MakraRig.fbx-0b22ce3455362f7f503eb2951b43794f.scn"
 
 [deps]
 
-source_file="res://assets/monsters/meshy_mob.glb"
-dest_files=["res://.godot/imported/meshy_mob.glb-b14a2783a6803a94395d282d47c60df3.scn"]
+source_file="res://assets/monsters/MakraRig.fbx"
+dest_files=["res://.godot/imported/MakraRig.fbx-0b22ce3455362f7f503eb2951b43794f.scn"]
 
 [params]
 
@@ -32,7 +32,7 @@ meshes/force_disable_compression=false
 skins/use_named_skins=true
 animation/import=true
 animation/fps=30
-animation/trimming=false
+animation/trimming=true
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
@@ -40,6 +40,7 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-gltf/naming_version=2
-gltf/embedded_image_handling=1
-gltf/texture_map_mode=1
+fbx/importer=0
+fbx/allow_geometry_helper_nodes=false
+fbx/embedded_image_handling=1
+fbx/naming_version=2
