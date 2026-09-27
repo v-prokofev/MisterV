@@ -606,6 +606,7 @@ func _on_player_die() -> void:
 	is_dead = true
 	print("PLAYER WAS DEFEATED! Auto-respawning in 4 seconds...")
 	await get_tree().create_timer(4.0).timeout
+	global_position = Vector3(0, 0, 0)
 	current_health = max_health
 	is_dead = false
 	if health_bar_3d:
@@ -614,5 +615,5 @@ func _on_player_die() -> void:
 		hud_progress_bar.value = current_health
 	if hud_hp_label:
 		hud_hp_label.text = "%d" % int(ceil(current_health))
-	print("PLAYER HAS HEALED TO FULL HP!")
+	print("PLAYER HAS HEALED TO FULL HP AND RESPAWNED AT (0,0)!")
 

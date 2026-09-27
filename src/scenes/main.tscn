@@ -56,12 +56,12 @@ shape = SubResource("BoxShape3D_floor")
 mesh = SubResource("BoxMesh_floor")
 
 [node name="Player" parent="." unique_id=1251455111 instance=ExtResource("1_player_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.05088067)
 
 [node name="Destructibles" type="Node3D" parent="." unique_id=87143630]
 
 [node name="PinkCrystal1" parent="Destructibles" unique_id=752857776 instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05939865, 0, 8.472538)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
 [node name="BlueCrystal1" parent="Destructibles" unique_id=519501971 instance=ExtResource("3_destructible_scene")]
@@ -93,14 +93,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -4)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
 [node name="BlueCrystal5" parent="Destructibles" unique_id=513834327 instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9390526, 0, 3.3671346)
 
 [node name="PinkCrystal6" parent="Destructibles" unique_id=1585396519 instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.1393223, 0, -3.9000814)
 object_color = Color(0.95, 0.2, 0.7, 1)
 
 [node name="BlueCrystal6" parent="Destructibles" unique_id=1257091859 instance=ExtResource("3_destructible_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.033746, 0, -10.989788)
 
 [node name="Monsters" type="Node3D" parent="." unique_id=1210349215]
 
