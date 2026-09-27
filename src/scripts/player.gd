@@ -329,8 +329,9 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	# 2. Target
-	current_target = _find_nearest_target()
+	# 2. Target (lock target during attack so leaving range doesn't cancel target mid-cast)
+	if not is_attacking:
+		current_target = _find_nearest_target()
 
 	# 3. Facing
 	var facing_dir := Vector3.ZERO
@@ -404,6 +405,7 @@ func _trigger_spell_cast() -> void:
 		return
 
 	is_attacking = true
+	var cast_target: Node3D = current_target # Save target at start of cast
 
 	# Start attack in upper-body SM
 	var upper_pb = anim_tree.get("parameters/upper_sm/playback") as AnimationNodeStateMachinePlayback
@@ -421,8 +423,8 @@ func _trigger_spell_cast() -> void:
 	var recovery_time = max(0.0, attack_duration - cast_time)
 
 	await get_tree().create_timer(cast_time).timeout
-	if is_instance_valid(current_target):
-		_spawn_magic_sphere()
+	if is_instance_valid(cast_target):
+		_spawn_magic_sphere(cast_target)
 
 	await get_tree().create_timer(recovery_time).timeout
 
@@ -436,14 +438,15 @@ func _trigger_spell_cast() -> void:
 	_upper_blend_target = 0.0
 	is_attacking = false
 
-func _spawn_magic_sphere() -> void:
-	if not magic_sphere_scene or not current_target:
+func _spawn_magic_sphere(target_node: Node3D = null) -> void:
+	var target = target_node if target_node else current_target
+	if not magic_sphere_scene or not target or not is_instance_valid(target):
 		return
 	var sphere = magic_sphere_scene.instantiate()
 	get_parent().add_child(sphere)
 	var spawn_pos = spell_cast_point.global_position if spell_cast_point else global_position + Vector3(0, 1.2, 0)
 	sphere.global_position = spawn_pos
-	var target_center = current_target.global_position + Vector3(0, 1.0, 0)
+	var target_center = target.global_position + Vector3(0, 1.0, 0)
 	var shoot_dir = (target_center - spawn_pos).normalized()
 	if sphere.has_method("set_target_direction"):
 		sphere.set_target_direction(shoot_dir)
